@@ -43,4 +43,71 @@
             );
         </sql>
     </changeSet>
+
+    <changeSet id="002-create-hospital-provider-tables" author="codex">
+        <sql>
+            CREATE TABLE hospital (
+                id UUID PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
+                tax_id VARCHAR(80) NOT NULL,
+                license_no VARCHAR(120) NOT NULL,
+                phone VARCHAR(80) NULL,
+                email VARCHAR(320) NULL,
+                status VARCHAR(30) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                CONSTRAINT uk_hospital_tax_id UNIQUE (tax_id),
+                CONSTRAINT uk_hospital_license_no UNIQUE (license_no)
+            );
+
+            CREATE TABLE hospital_branch (
+                id UUID PRIMARY KEY,
+                hospital_id UUID NOT NULL,
+                name VARCHAR(200) NOT NULL,
+                city VARCHAR(120) NOT NULL,
+                address_line VARCHAR(255) NOT NULL,
+                phone VARCHAR(80) NULL,
+                created_at TIMESTAMP NOT NULL,
+                CONSTRAINT fk_hospital_branch_hospital FOREIGN KEY (hospital_id) REFERENCES hospital(id)
+            );
+
+            CREATE TABLE hospital_staff_profile (
+                id UUID PRIMARY KEY,
+                user_id UUID NOT NULL,
+                hospital_id UUID NOT NULL,
+                branch_id UUID NULL,
+                position VARCHAR(120) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                CONSTRAINT uk_hospital_staff_user UNIQUE (user_id),
+                CONSTRAINT fk_hospital_staff_hospital FOREIGN KEY (hospital_id) REFERENCES hospital(id),
+                CONSTRAINT fk_hospital_staff_branch FOREIGN KEY (branch_id) REFERENCES hospital_branch(id)
+            );
+
+            CREATE TABLE doctor_hospital_assignment (
+                id UUID PRIMARY KEY,
+                doctor_profile_id UUID NOT NULL,
+                hospital_id UUID NOT NULL,
+                branch_id UUID NULL,
+                department VARCHAR(120) NULL,
+                is_primary BOOLEAN NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                CONSTRAINT fk_doctor_hospital_doctor FOREIGN KEY (doctor_profile_id) REFERENCES doctor_profile(id),
+                CONSTRAINT fk_doctor_hospital_hospital FOREIGN KEY (hospital_id) REFERENCES hospital(id),
+                CONSTRAINT fk_doctor_hospital_branch FOREIGN KEY (branch_id) REFERENCES hospital_branch(id),
+                CONSTRAINT uk_doctor_hospital UNIQUE (doctor_profile_id, hospital_id)
+            );
+
+            CREATE INDEX idx_hospital_branch_hospital ON hospital_branch(hospital_id);
+            CREATE INDEX idx_hospital_staff_hospital ON hospital_staff_profile(hospital_id);
+            CREATE INDEX idx_doctor_hospital_hospital ON doctor_hospital_assignment(hospital_id);
+            CREATE INDEX idx_doctor_hospital_doctor ON doctor_hospital_assignment(doctor_profile_id);
+        </sql>
+        <rollback>
+            <sql>
+                DROP TABLE IF EXISTS doctor_hospital_assignment;
+                DROP TABLE IF EXISTS hospital_staff_profile;
+                DROP TABLE IF EXISTS hospital_branch;
+                DROP TABLE IF EXISTS hospital;
+            </sql>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>
