@@ -66,6 +66,20 @@ class InternalAuthFilterTest {
         assertTrue(response.getContentAsString().contains("MISSING_AUTH_HEADER"));
     }
 
+    @Test
+    void returnsForbiddenForInsufficientRole() throws ServletException, IOException {
+        MockHttpServletRequest request = authenticatedRequest("/api/v1/test", "corr-123");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        filter.doFilter(request, response, (servletRequest, servletResponse) -> {
+            throw new InternalAuthException("INSUFFICIENT_ROLE", "Access denied");
+        });
+
+        assertEquals(403, response.getStatus());
+        assertEquals("corr-123", response.getHeader(InternalAuthHeaders.CORRELATION_ID));
+        assertTrue(response.getContentAsString().contains("INSUFFICIENT_ROLE"));
+    }
+
     private MockHttpServletRequest authenticatedRequest(String path, String correlationId) {
         MockHttpServletRequest request = new MockHttpServletRequest("GET", path);
         request.addHeader(InternalAuthHeaders.USER_ID, UUID.randomUUID().toString());

@@ -85,14 +85,15 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public HospitalResponse hospital(UUID hospitalId) {
+        Hospital hospital = findHospital(hospitalId);
         providerAccessService.requireHospitalRead(hospitalId);
-        return toResponse(findHospital(hospitalId));
+        return toResponse(hospital);
     }
 
     @Transactional
     public HospitalBranchResponse createBranch(UUID hospitalId, CreateHospitalBranchRequest request) {
-        providerAccessService.requireHospitalWrite(hospitalId);
         findHospital(hospitalId);
+        providerAccessService.requireHospitalWrite(hospitalId);
         HospitalBranch branch = new HospitalBranch(
                 UUID.randomUUID(),
                 hospitalId,
@@ -107,19 +108,22 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public List<HospitalBranchResponse> branches(UUID hospitalId) {
-        providerAccessService.requireHospitalRead(hospitalId);
         findHospital(hospitalId);
+        providerAccessService.requireHospitalRead(hospitalId);
+        UUID userId = providerAccessService.currentUserId();
         return hospitalBranchRepository.findAllByHospitalId(hospitalId).stream()
+                .filter(branch -> providerAccessService.canViewBranch(userId, branch.getId()))
                 .map(this::toResponse)
                 .toList();
     }
 
     @Transactional
     public HospitalStaffResponse createStaff(UUID hospitalId, CreateHospitalStaffRequest request) {
-        providerAccessService.requireHospitalWrite(hospitalId);
         findHospital(hospitalId);
+        providerAccessService.requireHospitalStaffManage(hospitalId);
         if (request.branchId() != null) {
             validateBranch(hospitalId, request.branchId());
+            providerAccessService.requireBranchWrite(request.branchId());
         }
         if (hospitalStaffProfileRepository.existsByUserId(request.userId())) {
             throw new UserProfileException("STAFF_ALREADY_EXISTS", "User already has a hospital staff profile");
@@ -137,9 +141,11 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public List<HospitalStaffResponse> staff(UUID hospitalId) {
-        providerAccessService.requireHospitalRead(hospitalId);
         findHospital(hospitalId);
+        providerAccessService.requireHospitalRead(hospitalId);
+        UUID userId = providerAccessService.currentUserId();
         return hospitalStaffProfileRepository.findAllByHospitalId(hospitalId).stream()
+                .filter(staff -> providerAccessService.canViewHospitalStaffProfile(userId, staff))
                 .map(this::toResponse)
                 .toList();
     }
@@ -147,13 +153,14 @@ public class HospitalService {
     @Transactional
     public DoctorHospitalAssignmentResponse assignDoctor(UUID hospitalId, UUID doctorProfileId,
                                                          AssignDoctorToHospitalRequest request) {
-        providerAccessService.requireHospitalWrite(hospitalId);
         findHospital(hospitalId);
         if (!doctorProfileRepository.existsById(doctorProfileId)) {
             throw new UserProfileException("DOCTOR_NOT_FOUND", "Doctor profile was not found");
         }
+        providerAccessService.requireDoctorAssignment(hospitalId, doctorProfileId);
         if (request.branchId() != null) {
             validateBranch(hospitalId, request.branchId());
+            providerAccessService.requireBranchWrite(request.branchId());
         }
         if (doctorHospitalAssignmentRepository.existsByDoctorProfileIdAndHospitalId(doctorProfileId, hospitalId)) {
             throw new UserProfileException("DOCTOR_ALREADY_ASSIGNED", "Doctor is already assigned to this hospital");
@@ -172,9 +179,11 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public List<DoctorHospitalAssignmentResponse> doctorAssignments(UUID hospitalId) {
-        providerAccessService.requireHospitalRead(hospitalId);
         findHospital(hospitalId);
+        providerAccessService.requireHospitalRead(hospitalId);
+        UUID userId = providerAccessService.currentUserId();
         return doctorHospitalAssignmentRepository.findAllByHospitalId(hospitalId).stream()
+                .filter(assignment -> providerAccessService.canViewDoctorAssignment(userId, assignment))
                 .map(this::toResponse)
                 .toList();
     }

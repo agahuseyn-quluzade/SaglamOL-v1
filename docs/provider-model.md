@@ -37,4 +37,25 @@ Endpoints:
 - `POST /api/v1/profiles/hospitals/{hospitalId}/doctors/{doctorProfileId}`
 - `GET /api/v1/profiles/hospitals/{hospitalId}/doctors`
 
-Authorization gateway-den gelen `X-User-Roles` header-i esasinda yoxlanilir.
+## Provider Ownership Authorization
+
+Authorization yalniz role yoxlamasi deyil. Gateway-den gelen `X-User-Id` ve `X-User-Roles` header-leri `common-security` ile `AuthContext`-e cevrilir, ownership ise `user-profile-service` daxilinde `ProviderAccessService` merkezinde yoxlanilir.
+
+Qaydalar:
+
+- `ADMIN` global bypass huququna malikdir.
+- `HOSPITAL_ADMIN` yalniz `X-User-Id -> HospitalStaffProfile -> hospitalId` uygun gelen hospital-i idare ede biler.
+- `HOSPITAL_ADMIN` basqa hospital-a branch, staff ve doctor assignment elave ede bilmez.
+- `HOSPITAL_STAFF` yalniz oz hospital-ini gore biler; `branchId` varsa branch datasinda hemin branch ile mehdudlasir.
+- `DOCTOR` yalniz `X-User-Id -> DoctorProfile -> DoctorHospitalAssignment` ile assignment oldugu hospital/branch datasini gore biler.
+- Request path-de gelen `hospitalId` ve `branchId` tekbasina etibarli sayilmir; resource DB-den tapilir ve user-in profile/assignment elaqesi ile yoxlanilir.
+
+Provider authorization ucun merkez metodlar:
+
+- `canManageHospital(userId, hospitalId)`
+- `canViewHospital(userId, hospitalId)`
+- `canManageBranch(userId, branchId)`
+- `canViewBranch(userId, branchId)`
+- `canManageHospitalStaff(userId, hospitalId)`
+- `canAssignDoctor(userId, hospitalId, doctorProfileId)`
+- `canDoctorAccessHospital(userId, hospitalId)`

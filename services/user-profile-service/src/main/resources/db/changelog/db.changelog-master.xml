@@ -110,4 +110,22 @@
             </sql>
         </rollback>
     </changeSet>
+
+    <changeSet id="003-add-provider-ownership-indexes" author="codex">
+        <sql>
+            CREATE INDEX IF NOT EXISTS idx_hospital_staff_branch ON hospital_staff_profile(branch_id);
+            CREATE INDEX IF NOT EXISTS idx_hospital_staff_hospital_branch ON hospital_staff_profile(hospital_id, branch_id);
+            CREATE INDEX IF NOT EXISTS idx_doctor_hospital_branch ON doctor_hospital_assignment(branch_id);
+            CREATE INDEX IF NOT EXISTS idx_doctor_hospital_doctor_hospital_branch
+                ON doctor_hospital_assignment(doctor_profile_id, hospital_id, branch_id);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX IF EXISTS idx_doctor_hospital_doctor_hospital_branch;
+                DROP INDEX IF EXISTS idx_doctor_hospital_branch;
+                DROP INDEX IF EXISTS idx_hospital_staff_hospital_branch;
+                DROP INDEX IF EXISTS idx_hospital_staff_branch;
+            </sql>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>

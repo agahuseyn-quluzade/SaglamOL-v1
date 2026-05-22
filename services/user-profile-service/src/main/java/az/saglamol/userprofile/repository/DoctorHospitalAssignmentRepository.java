@@ -13,4 +13,8 @@ public interface DoctorHospitalAssignmentRepository extends JpaRepository<Doctor
     List<DoctorHospitalAssignment> findAllByHospitalId(UUID hospitalId);
 
     List<DoctorHospitalAssignment> findAllByDoctorProfileId(UUID doctorProfileId);
+
+    boolean existsByDoctorProfileIdAndHospitalIdAndBranchId(UUID doctorProfileId, UUID hospitalId, UUID branchId);
+
+    boolean existsByDoctorProfileIdAndHospitalIdAndBranchIdIsNull(UUID doctorProfileId, UUID hospitalId);
 }

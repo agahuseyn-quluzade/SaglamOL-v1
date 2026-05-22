@@ -14,4 +14,6 @@ public interface HospitalStaffProfileRepository extends JpaRepository<HospitalSt
     Optional<HospitalStaffProfile> findByUserId(UUID userId);
 
     List<HospitalStaffProfile> findAllByHospitalId(UUID hospitalId);
+
+    List<HospitalStaffProfile> findAllByHospitalIdAndBranchId(UUID hospitalId, UUID branchId);
 }
