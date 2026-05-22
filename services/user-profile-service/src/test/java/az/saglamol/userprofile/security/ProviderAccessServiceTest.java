@@ -8,6 +8,7 @@ import az.saglamol.userprofile.entity.DoctorHospitalAssignment;
 import az.saglamol.userprofile.entity.DoctorProfile;
 import az.saglamol.userprofile.entity.HospitalBranch;
 import az.saglamol.userprofile.entity.HospitalStaffProfile;
+import az.saglamol.userprofile.entity.ProfileStatus;
 import az.saglamol.userprofile.exception.UserProfileException;
 import az.saglamol.userprofile.repository.DoctorHospitalAssignmentRepository;
 import az.saglamol.userprofile.repository.DoctorProfileRepository;
@@ -110,14 +111,7 @@ class ProviderAccessServiceTest {
         UUID doctorProfileId = UUID.randomUUID();
         UUID hospitalId = UUID.randomUUID();
         setContext(userId, RoleConstants.DOCTOR);
-        when(doctorProfileRepository.findByUserId(userId)).thenReturn(Optional.of(new DoctorProfile(
-                doctorProfileId,
-                userId,
-                "LIC-1",
-                null,
-                "Cardiology",
-                Instant.now()
-        )));
+        when(doctorProfileRepository.findByIamUserId(userId)).thenReturn(Optional.of(doctor(doctorProfileId, userId)));
         when(doctorHospitalAssignmentRepository.existsByDoctorProfileIdAndHospitalId(doctorProfileId, hospitalId))
                 .thenReturn(true);
 
@@ -131,14 +125,7 @@ class ProviderAccessServiceTest {
         UUID doctorProfileId = UUID.randomUUID();
         UUID hospitalId = UUID.randomUUID();
         setContext(userId, RoleConstants.DOCTOR);
-        when(doctorProfileRepository.findByUserId(userId)).thenReturn(Optional.of(new DoctorProfile(
-                doctorProfileId,
-                userId,
-                "LIC-1",
-                null,
-                "Cardiology",
-                Instant.now()
-        )));
+        when(doctorProfileRepository.findByIamUserId(userId)).thenReturn(Optional.of(doctor(doctorProfileId, userId)));
 
         assertFalse(service.canDoctorAccessHospital(userId, hospitalId));
         assertFalse(service.canViewHospital(userId, hospitalId));
@@ -198,6 +185,25 @@ class ProviderAccessServiceTest {
                 "Address",
                 null,
                 Instant.now()
+        );
+    }
+
+    private DoctorProfile doctor(UUID doctorProfileId, UUID userId) {
+        Instant now = Instant.now();
+        return new DoctorProfile(
+                doctorProfileId,
+                userId,
+                "Doctor",
+                "One",
+                "LIC-1",
+                null,
+                "Cardiology",
+                "+994501234567",
+                "doctor@saglamol.az",
+                null,
+                ProfileStatus.ACTIVE,
+                now,
+                now
         );
     }
 }

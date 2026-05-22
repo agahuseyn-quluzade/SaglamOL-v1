@@ -128,4 +128,99 @@
             </sql>
         </rollback>
     </changeSet>
+
+    <changeSet id="004-expand-individual-profile-fields" author="codex">
+        <sql>
+            ALTER TABLE patient_profile
+                ADD COLUMN IF NOT EXISTS gender VARCHAR(30),
+                ADD COLUMN IF NOT EXISTS email VARCHAR(320),
+                ADD COLUMN IF NOT EXISTS national_id VARCHAR(80),
+                ADD COLUMN IF NOT EXISTS address_country VARCHAR(120),
+                ADD COLUMN IF NOT EXISTS address_city VARCHAR(120),
+                ADD COLUMN IF NOT EXISTS address_district VARCHAR(120),
+                ADD COLUMN IF NOT EXISTS address_street VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS address_postal_code VARCHAR(32),
+                ADD COLUMN IF NOT EXISTS emergency_contact_name VARCHAR(160),
+                ADD COLUMN IF NOT EXISTS emergency_contact_phone VARCHAR(32),
+                ADD COLUMN IF NOT EXISTS profile_status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+            ALTER TABLE doctor_profile
+                ADD COLUMN IF NOT EXISTS first_name VARCHAR(120) NOT NULL DEFAULT 'Unknown',
+                ADD COLUMN IF NOT EXISTS last_name VARCHAR(120) NOT NULL DEFAULT 'Unknown',
+                ADD COLUMN IF NOT EXISTS phone VARCHAR(32),
+                ADD COLUMN IF NOT EXISTS email VARCHAR(320),
+                ADD COLUMN IF NOT EXISTS address_country VARCHAR(120),
+                ADD COLUMN IF NOT EXISTS address_city VARCHAR(120),
+                ADD COLUMN IF NOT EXISTS address_district VARCHAR(120),
+                ADD COLUMN IF NOT EXISTS address_street VARCHAR(255),
+                ADD COLUMN IF NOT EXISTS address_postal_code VARCHAR(32),
+                ADD COLUMN IF NOT EXISTS profile_status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+            ALTER TABLE agent_profile
+                ADD COLUMN IF NOT EXISTS first_name VARCHAR(120) NOT NULL DEFAULT 'Unknown',
+                ADD COLUMN IF NOT EXISTS last_name VARCHAR(120) NOT NULL DEFAULT 'Unknown',
+                ADD COLUMN IF NOT EXISTS phone VARCHAR(32),
+                ADD COLUMN IF NOT EXISTS email VARCHAR(320),
+                ADD COLUMN IF NOT EXISTS profile_status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+                ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+            CREATE INDEX IF NOT EXISTS idx_patient_profile_status ON patient_profile(profile_status);
+            CREATE INDEX IF NOT EXISTS idx_patient_profile_email ON patient_profile(email);
+            CREATE INDEX IF NOT EXISTS idx_patient_profile_national_id ON patient_profile(national_id);
+            CREATE INDEX IF NOT EXISTS idx_doctor_profile_status ON doctor_profile(profile_status);
+            CREATE INDEX IF NOT EXISTS idx_doctor_profile_email ON doctor_profile(email);
+            CREATE INDEX IF NOT EXISTS idx_doctor_profile_specialty ON doctor_profile(specialty);
+            CREATE INDEX IF NOT EXISTS idx_agent_profile_status ON agent_profile(profile_status);
+            CREATE INDEX IF NOT EXISTS idx_agent_profile_email ON agent_profile(email);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX IF EXISTS idx_agent_profile_email;
+                DROP INDEX IF EXISTS idx_agent_profile_status;
+                DROP INDEX IF EXISTS idx_doctor_profile_specialty;
+                DROP INDEX IF EXISTS idx_doctor_profile_email;
+                DROP INDEX IF EXISTS idx_doctor_profile_status;
+                DROP INDEX IF EXISTS idx_patient_profile_national_id;
+                DROP INDEX IF EXISTS idx_patient_profile_email;
+                DROP INDEX IF EXISTS idx_patient_profile_status;
+
+                ALTER TABLE agent_profile
+                    DROP COLUMN IF EXISTS updated_at,
+                    DROP COLUMN IF EXISTS profile_status,
+                    DROP COLUMN IF EXISTS email,
+                    DROP COLUMN IF EXISTS phone,
+                    DROP COLUMN IF EXISTS last_name,
+                    DROP COLUMN IF EXISTS first_name;
+
+                ALTER TABLE doctor_profile
+                    DROP COLUMN IF EXISTS updated_at,
+                    DROP COLUMN IF EXISTS profile_status,
+                    DROP COLUMN IF EXISTS address_postal_code,
+                    DROP COLUMN IF EXISTS address_street,
+                    DROP COLUMN IF EXISTS address_district,
+                    DROP COLUMN IF EXISTS address_city,
+                    DROP COLUMN IF EXISTS address_country,
+                    DROP COLUMN IF EXISTS email,
+                    DROP COLUMN IF EXISTS phone,
+                    DROP COLUMN IF EXISTS last_name,
+                    DROP COLUMN IF EXISTS first_name;
+
+                ALTER TABLE patient_profile
+                    DROP COLUMN IF EXISTS updated_at,
+                    DROP COLUMN IF EXISTS profile_status,
+                    DROP COLUMN IF EXISTS emergency_contact_phone,
+                    DROP COLUMN IF EXISTS emergency_contact_name,
+                    DROP COLUMN IF EXISTS address_postal_code,
+                    DROP COLUMN IF EXISTS address_street,
+                    DROP COLUMN IF EXISTS address_district,
+                    DROP COLUMN IF EXISTS address_city,
+                    DROP COLUMN IF EXISTS address_country,
+                    DROP COLUMN IF EXISTS national_id,
+                    DROP COLUMN IF EXISTS email,
+                    DROP COLUMN IF EXISTS gender;
+            </sql>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>

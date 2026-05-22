@@ -152,14 +152,14 @@ public class ProviderAccessService {
     }
 
     public boolean canDoctorAccessHospital(UUID userId, UUID hospitalId) {
-        return doctorProfileRepository.findByUserId(userId)
+        return doctorProfileRepository.findByIamUserId(userId)
                 .map(doctor -> doctorHospitalAssignmentRepository
                         .existsByDoctorProfileIdAndHospitalId(doctor.getId(), hospitalId))
                 .orElse(false);
     }
 
     public boolean canDoctorAccessBranch(UUID userId, UUID hospitalId, UUID branchId) {
-        return doctorProfileRepository.findByUserId(userId)
+        return doctorProfileRepository.findByIamUserId(userId)
                 .map(doctor -> doctorHospitalAssignmentRepository
                         .existsByDoctorProfileIdAndHospitalIdAndBranchId(doctor.getId(), hospitalId, branchId)
                         || doctorHospitalAssignmentRepository
@@ -193,7 +193,7 @@ public class ProviderAccessService {
             return canViewBranch(userId, assignment.getBranchId());
         }
         if (roleChecker.isDoctor()) {
-            return doctorProfileRepository.findByUserId(userId)
+            return doctorProfileRepository.findByIamUserId(userId)
                     .map(doctor -> doctor.getId().equals(assignment.getDoctorProfileId()))
                     .orElse(false);
         }
@@ -233,7 +233,7 @@ public class ProviderAccessService {
 
     private Set<UUID> readableDoctorHospitalIds() {
         UUID userId = currentUserId();
-        DoctorProfile doctor = doctorProfileRepository.findByUserId(userId)
+        DoctorProfile doctor = doctorProfileRepository.findByIamUserId(userId)
                 .orElseThrow(() -> forbidden("Doctor profile is required"));
         return doctorHospitalAssignmentRepository.findAllByDoctorProfileId(doctor.getId()).stream()
                 .map(assignment -> assignment.getHospitalId())

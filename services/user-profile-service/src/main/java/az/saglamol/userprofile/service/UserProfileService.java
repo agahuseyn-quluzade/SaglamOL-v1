@@ -12,17 +12,21 @@ import az.saglamol.userprofile.dto.response.PatientProfileResponse;
 import az.saglamol.userprofile.entity.AgentProfile;
 import az.saglamol.userprofile.entity.DoctorProfile;
 import az.saglamol.userprofile.entity.PatientProfile;
+import az.saglamol.userprofile.entity.ProfileStatus;
 import az.saglamol.userprofile.exception.UserProfileException;
+import az.saglamol.userprofile.mapper.ProfileMapper;
 import az.saglamol.userprofile.repository.AgentProfileRepository;
 import az.saglamol.userprofile.repository.DoctorHospitalAssignmentRepository;
 import az.saglamol.userprofile.repository.DoctorProfileRepository;
 import az.saglamol.userprofile.repository.PatientProfileRepository;
 import az.saglamol.userprofile.security.ProviderAccessService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -34,6 +38,7 @@ public class UserProfileService {
     private final DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository;
     private final RoleChecker roleChecker;
     private final ProviderAccessService providerAccessService;
+    private final ProfileMapper profileMapper;
 
     public UserProfileService(
             PatientProfileRepository patientProfileRepository,
@@ -41,7 +46,8 @@ public class UserProfileService {
             AgentProfileRepository agentProfileRepository,
             DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository,
             RoleChecker roleChecker,
-            ProviderAccessService providerAccessService
+            ProviderAccessService providerAccessService,
+            ProfileMapper profileMapper
     ) {
         this.patientProfileRepository = patientProfileRepository;
         this.doctorProfileRepository = doctorProfileRepository;
@@ -49,171 +55,234 @@ public class UserProfileService {
         this.doctorHospitalAssignmentRepository = doctorHospitalAssignmentRepository;
         this.roleChecker = roleChecker;
         this.providerAccessService = providerAccessService;
+        this.profileMapper = profileMapper;
     }
 
     @Transactional
-    public PatientProfileResponse createMyPatientProfile(UpsertPatientProfileRequest request) {
-        roleChecker.requireRole(RoleConstants.PATIENT);
-        UUID userId = currentUserId();
-        if (patientProfileRepository.existsByUserId(userId)) {
-            throw new UserProfileException("PROFILE_ALREADY_EXISTS", "Patient profile already exists");
+    public PatientProfileResponse createPatientProfile(UpsertPatientProfileRequest request) {
+        roleChecker.requireAnyRole(RoleConstants.PATIENT, RoleConstants.ADMIN);
+        UUID iamUserId = currentUserId();
+        if (patientProfileRepository.existsByIamUserId(iamUserId)) {
+            throw conflict("Patient profile already exists");
         }
+        Instant now = Instant.now();
         PatientProfile profile = new PatientProfile(
                 UUID.randomUUID(),
-                userId,
+                iamUserId,
                 request.firstName(),
                 request.lastName(),
                 request.dateOfBirth(),
+                request.gender(),
                 request.phone(),
-                Instant.now()
+                request.email(),
+                request.nationalId(),
+                profileMapper.toAddress(request.address()),
+                request.emergencyContactName(),
+                request.emergencyContactPhone(),
+                requestedStatus(request.profileStatus()),
+                now,
+                now
         );
-        return toResponse(patientProfileRepository.save(profile));
+        return profileMapper.toResponse(patientProfileRepository.save(profile));
     }
 
     @Transactional(readOnly = true)
     public PatientProfileResponse myPatientProfile() {
-        roleChecker.requireRole(RoleConstants.PATIENT);
-        return toResponse(patientByUserId(currentUserId()));
-    }
-
-    @Transactional
-    public PatientProfileResponse updateMyPatientProfile(UpsertPatientProfileRequest request) {
-        roleChecker.requireRole(RoleConstants.PATIENT);
-        PatientProfile profile = patientByUserId(currentUserId());
-        profile.update(request.firstName(), request.lastName(), request.dateOfBirth(), request.phone());
-        return toResponse(profile);
-    }
-
-    @Transactional(readOnly = true)
-    public List<PatientProfileResponse> patients() {
-        roleChecker.requireAnyRole(RoleConstants.ADMIN, RoleConstants.AGENT);
-        return patientProfileRepository.findAll().stream().map(this::toResponse).toList();
+        roleChecker.requireAnyRole(RoleConstants.PATIENT, RoleConstants.ADMIN);
+        return profileMapper.toResponse(patientByIamUserId(currentUserId()));
     }
 
     @Transactional(readOnly = true)
     public PatientProfileResponse patient(UUID profileId) {
-        PatientProfile profile = patientProfileRepository.findById(profileId)
-                .orElseThrow(() -> notFound("PATIENT_PROFILE_NOT_FOUND", "Patient profile was not found"));
-        if (roleChecker.isAdmin() || roleChecker.isAgent() || profile.getUserId().equals(currentUserId())) {
-            return toResponse(profile);
-        }
-        throw forbidden("Patient profile access is forbidden");
+        PatientProfile profile = patientById(profileId);
+        requirePatientAccess(profile);
+        return profileMapper.toResponse(profile);
     }
 
     @Transactional
-    public DoctorProfileResponse createMyDoctorProfile(UpsertDoctorProfileRequest request) {
-        roleChecker.requireRole(RoleConstants.DOCTOR);
-        UUID userId = currentUserId();
-        if (doctorProfileRepository.existsByUserId(userId)) {
-            throw new UserProfileException("PROFILE_ALREADY_EXISTS", "Doctor profile already exists");
-        }
-        if (doctorProfileRepository.existsByLicenseNo(request.licenseNo())) {
-            throw new UserProfileException("PROFILE_ALREADY_EXISTS", "Doctor license number already exists");
-        }
-        DoctorProfile profile = new DoctorProfile(
-                UUID.randomUUID(),
-                userId,
-                request.licenseNo(),
-                request.hospitalId(),
-                request.specialty(),
+    public PatientProfileResponse updatePatientProfile(UUID profileId, UpsertPatientProfileRequest request) {
+        PatientProfile profile = patientById(profileId);
+        requirePatientManage(profile);
+        ProfileStatus nextStatus = requestedStatus(request.profileStatus());
+        validateStatusChange(profile.getProfileStatus(), nextStatus);
+        profile.update(
+                request.firstName(),
+                request.lastName(),
+                request.dateOfBirth(),
+                request.gender(),
+                request.phone(),
+                request.email(),
+                request.nationalId(),
+                profileMapper.toAddress(request.address()),
+                request.emergencyContactName(),
+                request.emergencyContactPhone(),
+                nextStatus,
                 Instant.now()
         );
-        return toResponse(doctorProfileRepository.save(profile));
+        return profileMapper.toResponse(profile);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PatientProfileResponse> searchPatients(String query, ProfileStatus status, Pageable pageable) {
+        roleChecker.requireAnyRole(RoleConstants.ADMIN, RoleConstants.AGENT);
+        return patientProfileRepository.search(query, status, pageable).map(profileMapper::toResponse);
+    }
+
+    @Transactional
+    public DoctorProfileResponse createDoctorProfile(UpsertDoctorProfileRequest request) {
+        if (roleChecker.isHospitalAdmin() && !roleChecker.isAdmin()) {
+            throw forbidden("Hospital admin cannot create doctor profiles");
+        }
+        roleChecker.requireAnyRole(RoleConstants.DOCTOR, RoleConstants.ADMIN);
+        UUID iamUserId = currentUserId();
+        if (doctorProfileRepository.existsByIamUserId(iamUserId)) {
+            throw conflict("Doctor profile already exists");
+        }
+        if (doctorProfileRepository.existsByLicenseNumber(request.licenseNumber())) {
+            throw conflict("Doctor license number already exists");
+        }
+        Instant now = Instant.now();
+        DoctorProfile profile = new DoctorProfile(
+                UUID.randomUUID(),
+                iamUserId,
+                request.firstName(),
+                request.lastName(),
+                request.licenseNumber(),
+                null,
+                request.specialty(),
+                request.phone(),
+                request.email(),
+                profileMapper.toAddress(request.address()),
+                requestedStatus(request.profileStatus()),
+                now,
+                now
+        );
+        return profileMapper.toResponse(doctorProfileRepository.save(profile));
     }
 
     @Transactional(readOnly = true)
     public DoctorProfileResponse myDoctorProfile() {
-        roleChecker.requireRole(RoleConstants.DOCTOR);
-        return toResponse(doctorByUserId(currentUserId()));
-    }
-
-    @Transactional
-    public DoctorProfileResponse updateMyDoctorProfile(UpsertDoctorProfileRequest request) {
-        roleChecker.requireRole(RoleConstants.DOCTOR);
-        UUID userId = currentUserId();
-        DoctorProfile profile = doctorByUserId(userId);
-        if (doctorProfileRepository.existsByLicenseNoAndUserIdNot(request.licenseNo(), userId)) {
-            throw new UserProfileException("PROFILE_ALREADY_EXISTS", "Doctor license number already exists");
-        }
-        profile.update(request.licenseNo(), request.hospitalId(), request.specialty());
-        return toResponse(profile);
-    }
-
-    @Transactional(readOnly = true)
-    public List<DoctorProfileResponse> doctors() {
-        roleChecker.requireAnyRole(RoleConstants.ADMIN, RoleConstants.AGENT, RoleConstants.HOSPITAL_ADMIN, RoleConstants.HOSPITAL_STAFF);
-        return doctorProfileRepository.findAll().stream()
-                .filter(this::canReadDoctor)
-                .map(this::toResponse)
-                .toList();
+        roleChecker.requireAnyRole(RoleConstants.DOCTOR, RoleConstants.ADMIN);
+        return profileMapper.toResponse(doctorByIamUserId(currentUserId()));
     }
 
     @Transactional(readOnly = true)
     public DoctorProfileResponse doctor(UUID profileId) {
-        DoctorProfile profile = doctorProfileRepository.findById(profileId)
-                .orElseThrow(() -> notFound("DOCTOR_PROFILE_NOT_FOUND", "Doctor profile was not found"));
+        DoctorProfile profile = doctorById(profileId);
         if (canReadDoctor(profile)) {
-            return toResponse(profile);
+            return profileMapper.toResponse(profile);
         }
         throw forbidden("Doctor profile access is forbidden");
     }
 
     @Transactional
-    public AgentProfileResponse createMyAgentProfile(UpsertAgentProfileRequest request) {
-        roleChecker.requireRole(RoleConstants.AGENT);
-        UUID userId = currentUserId();
-        if (agentProfileRepository.existsByUserId(userId)) {
-            throw new UserProfileException("PROFILE_ALREADY_EXISTS", "Agent profile already exists");
+    public DoctorProfileResponse updateDoctorProfile(UUID profileId, UpsertDoctorProfileRequest request) {
+        DoctorProfile profile = doctorById(profileId);
+        requireDoctorManage(profile);
+        if (doctorProfileRepository.existsByLicenseNumberAndIamUserIdNot(request.licenseNumber(), profile.getIamUserId())) {
+            throw conflict("Doctor license number already exists");
         }
-        if (agentProfileRepository.existsByEmployeeNo(request.employeeNo())) {
-            throw new UserProfileException("PROFILE_ALREADY_EXISTS", "Agent employee number already exists");
-        }
-        AgentProfile profile = new AgentProfile(
-                UUID.randomUUID(),
-                userId,
-                request.employeeNo(),
-                request.department(),
+        ProfileStatus nextStatus = requestedStatus(request.profileStatus());
+        validateStatusChange(profile.getProfileStatus(), nextStatus);
+        profile.update(
+                request.firstName(),
+                request.lastName(),
+                request.licenseNumber(),
+                null,
+                request.specialty(),
+                request.phone(),
+                request.email(),
+                profileMapper.toAddress(request.address()),
+                nextStatus,
                 Instant.now()
         );
-        return toResponse(agentProfileRepository.save(profile));
+        return profileMapper.toResponse(profile);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<DoctorProfileResponse> searchDoctors(String query, ProfileStatus status, Pageable pageable) {
+        roleChecker.requireAnyRole(RoleConstants.ADMIN, RoleConstants.AGENT, RoleConstants.HOSPITAL_ADMIN, RoleConstants.HOSPITAL_STAFF);
+        Page<DoctorProfile> page = doctorProfileRepository.search(query, status, pageable);
+        if (roleChecker.isAdmin() || roleChecker.isAgent()) {
+            return page.map(profileMapper::toResponse);
+        }
+        var filtered = page.getContent().stream()
+                .filter(this::canReadDoctor)
+                .map(profileMapper::toResponse)
+                .toList();
+        return new PageImpl<>(filtered, pageable, filtered.size());
+    }
+
+    @Transactional
+    public AgentProfileResponse createAgentProfile(UpsertAgentProfileRequest request) {
+        roleChecker.requireAnyRole(RoleConstants.AGENT, RoleConstants.ADMIN);
+        UUID iamUserId = currentUserId();
+        if (agentProfileRepository.existsByIamUserId(iamUserId)) {
+            throw conflict("Agent profile already exists");
+        }
+        if (agentProfileRepository.existsByEmployeeCode(request.employeeCode())) {
+            throw conflict("Agent employee code already exists");
+        }
+        Instant now = Instant.now();
+        AgentProfile profile = new AgentProfile(
+                UUID.randomUUID(),
+                iamUserId,
+                request.firstName(),
+                request.lastName(),
+                request.employeeCode(),
+                request.department(),
+                request.phone(),
+                request.email(),
+                requestedStatus(request.profileStatus()),
+                now,
+                now
+        );
+        return profileMapper.toResponse(agentProfileRepository.save(profile));
     }
 
     @Transactional(readOnly = true)
     public AgentProfileResponse myAgentProfile() {
-        roleChecker.requireRole(RoleConstants.AGENT);
-        return toResponse(agentByUserId(currentUserId()));
-    }
-
-    @Transactional
-    public AgentProfileResponse updateMyAgentProfile(UpsertAgentProfileRequest request) {
-        roleChecker.requireRole(RoleConstants.AGENT);
-        UUID userId = currentUserId();
-        AgentProfile profile = agentByUserId(userId);
-        if (agentProfileRepository.existsByEmployeeNoAndUserIdNot(request.employeeNo(), userId)) {
-            throw new UserProfileException("PROFILE_ALREADY_EXISTS", "Agent employee number already exists");
-        }
-        profile.update(request.employeeNo(), request.department());
-        return toResponse(profile);
-    }
-
-    @Transactional(readOnly = true)
-    public List<AgentProfileResponse> agents() {
-        roleChecker.requireRole(RoleConstants.ADMIN);
-        return agentProfileRepository.findAll().stream().map(this::toResponse).toList();
+        roleChecker.requireAnyRole(RoleConstants.AGENT, RoleConstants.ADMIN);
+        return profileMapper.toResponse(agentByIamUserId(currentUserId()));
     }
 
     @Transactional(readOnly = true)
     public AgentProfileResponse agent(UUID profileId) {
-        AgentProfile profile = agentProfileRepository.findById(profileId)
-                .orElseThrow(() -> notFound("AGENT_PROFILE_NOT_FOUND", "Agent profile was not found"));
-        if (roleChecker.isAdmin() || profile.getUserId().equals(currentUserId())) {
-            return toResponse(profile);
+        AgentProfile profile = agentById(profileId);
+        requireAgentAccess(profile);
+        return profileMapper.toResponse(profile);
+    }
+
+    @Transactional
+    public AgentProfileResponse updateAgentProfile(UUID profileId, UpsertAgentProfileRequest request) {
+        AgentProfile profile = agentById(profileId);
+        requireAgentManage(profile);
+        if (agentProfileRepository.existsByEmployeeCodeAndIamUserIdNot(request.employeeCode(), profile.getIamUserId())) {
+            throw conflict("Agent employee code already exists");
         }
-        throw forbidden("Agent profile access is forbidden");
+        ProfileStatus nextStatus = requestedStatus(request.profileStatus());
+        validateStatusChange(profile.getProfileStatus(), nextStatus);
+        profile.update(
+                request.firstName(),
+                request.lastName(),
+                request.employeeCode(),
+                request.department(),
+                request.phone(),
+                request.email(),
+                nextStatus,
+                Instant.now()
+        );
+        return profileMapper.toResponse(profile);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<AgentProfileResponse> searchAgents(String query, ProfileStatus status, Pageable pageable) {
+        roleChecker.requireRole(RoleConstants.ADMIN);
+        return agentProfileRepository.search(query, status, pageable).map(profileMapper::toResponse);
     }
 
     private boolean canReadDoctor(DoctorProfile profile) {
-        if (roleChecker.isAdmin() || roleChecker.isAgent() || profile.getUserId().equals(currentUserId())) {
+        if (roleChecker.isAdmin() || roleChecker.isAgent() || profile.getIamUserId().equals(currentUserId())) {
             return true;
         }
         if (roleChecker.isHospitalAdmin() || roleChecker.isHospitalStaff()) {
@@ -229,18 +298,85 @@ public class UserProfileService {
         return false;
     }
 
-    private PatientProfile patientByUserId(UUID userId) {
-        return patientProfileRepository.findByUserId(userId)
+    private void requirePatientAccess(PatientProfile profile) {
+        if (roleChecker.isAdmin() || roleChecker.isAgent() || profile.getIamUserId().equals(currentUserId())) {
+            return;
+        }
+        throw forbidden("Patient profile access is forbidden");
+    }
+
+    private void requirePatientManage(PatientProfile profile) {
+        if (roleChecker.isAdmin() || (roleChecker.isPatient() && profile.getIamUserId().equals(currentUserId()))) {
+            return;
+        }
+        throw forbidden("Patient profile management is forbidden");
+    }
+
+    private void requireDoctorManage(DoctorProfile profile) {
+        if (roleChecker.isAdmin() || (roleChecker.isDoctor() && profile.getIamUserId().equals(currentUserId()))) {
+            return;
+        }
+        throw forbidden("Doctor profile management is forbidden");
+    }
+
+    private void requireAgentAccess(AgentProfile profile) {
+        if (roleChecker.isAdmin() || profile.getIamUserId().equals(currentUserId())) {
+            return;
+        }
+        throw forbidden("Agent profile access is forbidden");
+    }
+
+    private void requireAgentManage(AgentProfile profile) {
+        if (roleChecker.isAdmin() || (roleChecker.isAgent() && profile.getIamUserId().equals(currentUserId()))) {
+            return;
+        }
+        throw forbidden("Agent profile management is forbidden");
+    }
+
+    private void validateStatusChange(ProfileStatus currentStatus, ProfileStatus nextStatus) {
+        if (roleChecker.isAdmin()) {
+            return;
+        }
+        if (currentStatus == ProfileStatus.SUSPENDED || nextStatus == ProfileStatus.SUSPENDED) {
+            throw forbidden("Only admin can set or update suspended profiles");
+        }
+    }
+
+    private ProfileStatus requestedStatus(ProfileStatus status) {
+        ProfileStatus nextStatus = status == null ? ProfileStatus.DRAFT : status;
+        if (nextStatus == ProfileStatus.SUSPENDED && !roleChecker.isAdmin()) {
+            throw forbidden("Only admin can create suspended profiles");
+        }
+        return nextStatus;
+    }
+
+    private PatientProfile patientById(UUID profileId) {
+        return patientProfileRepository.findById(profileId)
                 .orElseThrow(() -> notFound("PATIENT_PROFILE_NOT_FOUND", "Patient profile was not found"));
     }
 
-    private DoctorProfile doctorByUserId(UUID userId) {
-        return doctorProfileRepository.findByUserId(userId)
+    private PatientProfile patientByIamUserId(UUID iamUserId) {
+        return patientProfileRepository.findByIamUserId(iamUserId)
+                .orElseThrow(() -> notFound("PATIENT_PROFILE_NOT_FOUND", "Patient profile was not found"));
+    }
+
+    private DoctorProfile doctorById(UUID profileId) {
+        return doctorProfileRepository.findById(profileId)
                 .orElseThrow(() -> notFound("DOCTOR_PROFILE_NOT_FOUND", "Doctor profile was not found"));
     }
 
-    private AgentProfile agentByUserId(UUID userId) {
-        return agentProfileRepository.findByUserId(userId)
+    private DoctorProfile doctorByIamUserId(UUID iamUserId) {
+        return doctorProfileRepository.findByIamUserId(iamUserId)
+                .orElseThrow(() -> notFound("DOCTOR_PROFILE_NOT_FOUND", "Doctor profile was not found"));
+    }
+
+    private AgentProfile agentById(UUID profileId) {
+        return agentProfileRepository.findById(profileId)
+                .orElseThrow(() -> notFound("AGENT_PROFILE_NOT_FOUND", "Agent profile was not found"));
+    }
+
+    private AgentProfile agentByIamUserId(UUID iamUserId) {
+        return agentProfileRepository.findByIamUserId(iamUserId)
                 .orElseThrow(() -> notFound("AGENT_PROFILE_NOT_FOUND", "Agent profile was not found"));
     }
 
@@ -248,41 +384,12 @@ public class UserProfileService {
         return AuthContextHolder.getRequired().userId();
     }
 
-    private PatientProfileResponse toResponse(PatientProfile profile) {
-        return new PatientProfileResponse(
-                profile.getId(),
-                profile.getUserId(),
-                profile.getFirstName(),
-                profile.getLastName(),
-                profile.getDateOfBirth(),
-                profile.getPhone(),
-                profile.getCreatedAt()
-        );
-    }
-
-    private DoctorProfileResponse toResponse(DoctorProfile profile) {
-        return new DoctorProfileResponse(
-                profile.getId(),
-                profile.getUserId(),
-                profile.getLicenseNo(),
-                profile.getHospitalId(),
-                profile.getSpecialty(),
-                profile.getCreatedAt()
-        );
-    }
-
-    private AgentProfileResponse toResponse(AgentProfile profile) {
-        return new AgentProfileResponse(
-                profile.getId(),
-                profile.getUserId(),
-                profile.getEmployeeNo(),
-                profile.getDepartment(),
-                profile.getCreatedAt()
-        );
-    }
-
     private UserProfileException notFound(String code, String message) {
         return new UserProfileException(code, message);
+    }
+
+    private UserProfileException conflict(String message) {
+        return new UserProfileException("PROFILE_ALREADY_EXISTS", message);
     }
 
     private UserProfileException forbidden(String message) {

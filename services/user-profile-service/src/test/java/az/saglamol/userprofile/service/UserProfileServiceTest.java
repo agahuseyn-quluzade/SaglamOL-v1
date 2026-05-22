@@ -5,10 +5,17 @@ import az.saglamol.common.security.AuthContextHolder;
 import az.saglamol.common.security.InternalAuthException;
 import az.saglamol.common.security.RoleConstants;
 import az.saglamol.common.security.RoleChecker;
+import az.saglamol.userprofile.dto.request.UpsertAgentProfileRequest;
+import az.saglamol.userprofile.dto.request.UpsertDoctorProfileRequest;
 import az.saglamol.userprofile.dto.request.UpsertPatientProfileRequest;
+import az.saglamol.userprofile.entity.AgentProfile;
 import az.saglamol.userprofile.entity.DoctorHospitalAssignment;
 import az.saglamol.userprofile.entity.DoctorProfile;
+import az.saglamol.userprofile.entity.Gender;
 import az.saglamol.userprofile.entity.PatientProfile;
+import az.saglamol.userprofile.entity.ProfileStatus;
+import az.saglamol.userprofile.exception.UserProfileException;
+import az.saglamol.userprofile.mapper.ProfileMapper;
 import az.saglamol.userprofile.repository.AgentProfileRepository;
 import az.saglamol.userprofile.repository.DoctorHospitalAssignmentRepository;
 import az.saglamol.userprofile.repository.DoctorProfileRepository;
@@ -16,6 +23,8 @@ import az.saglamol.userprofile.repository.PatientProfileRepository;
 import az.saglamol.userprofile.security.ProviderAccessService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -28,6 +37,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -44,7 +54,8 @@ class UserProfileServiceTest {
             agentProfileRepository,
             doctorHospitalAssignmentRepository,
             new RoleChecker(),
-            providerAccessService
+            providerAccessService,
+            new ProfileMapper()
     );
 
     @AfterEach
@@ -58,24 +69,69 @@ class UserProfileServiceTest {
         setContext(userId, RoleConstants.PATIENT);
         when(patientProfileRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = service.createMyPatientProfile(new UpsertPatientProfileRequest(
+        var response = service.createPatientProfile(new UpsertPatientProfileRequest(
                 "Aga",
                 "Huseyn",
                 LocalDate.of(1995, 1, 1),
-                "+994501234567"
+                Gender.MALE,
+                "+994501234567",
+                "aga@saglamol.az",
+                null,
+                null,
+                null,
+                null,
+                ProfileStatus.ACTIVE
         ));
 
-        assertEquals(userId, response.userId());
+        assertEquals(userId, response.iamUserId());
         assertEquals("Aga", response.firstName());
+    }
+
+    @Test
+    void duplicatePatientProfileFails() {
+        UUID userId = UUID.randomUUID();
+        setContext(userId, RoleConstants.PATIENT);
+        when(patientProfileRepository.existsByIamUserId(userId)).thenReturn(true);
+
+        assertThrows(UserProfileException.class, () -> service.createPatientProfile(patientRequest()));
+    }
+
+    @Test
+    void patientCannotAccessAnotherPatientProfile() {
+        UUID currentUserId = UUID.randomUUID();
+        UUID anotherUserId = UUID.randomUUID();
+        UUID profileId = UUID.randomUUID();
+        setContext(currentUserId, RoleConstants.PATIENT);
+        when(patientProfileRepository.findById(profileId)).thenReturn(Optional.of(patient(profileId, anotherUserId)));
+
+        assertThrows(UserProfileException.class, () -> service.patient(profileId));
+    }
+
+    @Test
+    void adminCanAccessAllPatients() {
+        UUID profileId = UUID.randomUUID();
+        setContext(UUID.randomUUID(), RoleConstants.ADMIN);
+        when(patientProfileRepository.findById(profileId)).thenReturn(Optional.of(patient(profileId, UUID.randomUUID())));
+
+        var response = service.patient(profileId);
+
+        assertEquals(profileId, response.id());
     }
 
     @Test
     void nonPatientCannotCreatePatientProfile() {
         setContext(UUID.randomUUID(), RoleConstants.DOCTOR);
 
-        assertThrows(InternalAuthException.class, () -> service.createMyPatientProfile(new UpsertPatientProfileRequest(
+        assertThrows(InternalAuthException.class, () -> service.createPatientProfile(new UpsertPatientProfileRequest(
                 "Aga",
                 "Huseyn",
+                null,
+                null,
+                "+994501234567",
+                "aga@saglamol.az",
+                null,
+                null,
+                null,
                 null,
                 null
         )));
@@ -88,14 +144,7 @@ class UserProfileServiceTest {
         UUID hospitalId = UUID.randomUUID();
         setContext(staffUserId, RoleConstants.HOSPITAL_STAFF);
         when(providerAccessService.readableHospitalScope()).thenReturn(Optional.of(Set.of(hospitalId)));
-        when(doctorProfileRepository.findById(doctorProfileId)).thenReturn(Optional.of(new DoctorProfile(
-                doctorProfileId,
-                UUID.randomUUID(),
-                "LIC-1",
-                null,
-                "Cardiology",
-                Instant.now()
-        )));
+        when(doctorProfileRepository.findById(doctorProfileId)).thenReturn(Optional.of(doctor(doctorProfileId, UUID.randomUUID())));
         when(doctorHospitalAssignmentRepository.findAllByDoctorProfileId(doctorProfileId)).thenReturn(List.of(
                 new DoctorHospitalAssignment(UUID.randomUUID(), doctorProfileId, hospitalId, null, "Cardiology", true, Instant.now())
         ));
@@ -105,6 +154,83 @@ class UserProfileServiceTest {
         assertEquals(doctorProfileId, response.id());
     }
 
+    @Test
+    void doctorCreateSuccess() {
+        UUID userId = UUID.randomUUID();
+        setContext(userId, RoleConstants.DOCTOR);
+        when(doctorProfileRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.createDoctorProfile(doctorRequest("LIC-1"));
+
+        assertEquals(userId, response.iamUserId());
+        assertEquals("LIC-1", response.licenseNumber());
+    }
+
+    @Test
+    void duplicateLicenseFails() {
+        setContext(UUID.randomUUID(), RoleConstants.DOCTOR);
+        when(doctorProfileRepository.existsByLicenseNumber("LIC-1")).thenReturn(true);
+
+        assertThrows(UserProfileException.class, () -> service.createDoctorProfile(doctorRequest("LIC-1")));
+    }
+
+    @Test
+    void doctorCannotAccessAnotherDoctorProfile() {
+        UUID profileId = UUID.randomUUID();
+        setContext(UUID.randomUUID(), RoleConstants.DOCTOR);
+        when(doctorProfileRepository.findById(profileId)).thenReturn(Optional.of(doctor(profileId, UUID.randomUUID())));
+
+        assertThrows(UserProfileException.class, () -> service.doctor(profileId));
+    }
+
+    @Test
+    void hospitalAdminCannotCreateDoctorProfile() {
+        setContext(UUID.randomUUID(), RoleConstants.HOSPITAL_ADMIN);
+
+        assertThrows(UserProfileException.class, () -> service.createDoctorProfile(doctorRequest("LIC-1")));
+    }
+
+    @Test
+    void agentCreateSuccess() {
+        UUID userId = UUID.randomUUID();
+        setContext(userId, RoleConstants.AGENT);
+        when(agentProfileRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = service.createAgentProfile(agentRequest("AG-1"));
+
+        assertEquals(userId, response.iamUserId());
+        assertEquals("AG-1", response.employeeCode());
+    }
+
+    @Test
+    void duplicateEmployeeCodeFails() {
+        setContext(UUID.randomUUID(), RoleConstants.AGENT);
+        when(agentProfileRepository.existsByEmployeeCode("AG-1")).thenReturn(true);
+
+        assertThrows(UserProfileException.class, () -> service.createAgentProfile(agentRequest("AG-1")));
+    }
+
+    @Test
+    void agentCannotAccessAnotherAgentProfile() {
+        UUID profileId = UUID.randomUUID();
+        setContext(UUID.randomUUID(), RoleConstants.AGENT);
+        when(agentProfileRepository.findById(profileId)).thenReturn(Optional.of(agent(profileId, UUID.randomUUID())));
+
+        assertThrows(UserProfileException.class, () -> service.agent(profileId));
+    }
+
+    @Test
+    void searchPatientsReturnsPaginatedResult() {
+        setContext(UUID.randomUUID(), RoleConstants.ADMIN);
+        var pageable = PageRequest.of(0, 10);
+        when(patientProfileRepository.search(eq("aga"), eq(ProfileStatus.ACTIVE), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(patient(UUID.randomUUID(), UUID.randomUUID())), pageable, 1));
+
+        var page = service.searchPatients("aga", ProfileStatus.ACTIVE, pageable);
+
+        assertEquals(1, page.getTotalElements());
+    }
+
     private void setContext(UUID userId, String... roles) {
         AuthContextHolder.set(new AuthContext(
                 userId,
@@ -112,5 +238,103 @@ class UserProfileServiceTest {
                 UUID.randomUUID().toString(),
                 Map.of()
         ));
+    }
+
+    private UpsertPatientProfileRequest patientRequest() {
+        return new UpsertPatientProfileRequest(
+                "Aga",
+                "Huseyn",
+                LocalDate.of(1995, 1, 1),
+                Gender.MALE,
+                "+994501234567",
+                "aga@saglamol.az",
+                null,
+                null,
+                null,
+                null,
+                ProfileStatus.ACTIVE
+        );
+    }
+
+    private UpsertDoctorProfileRequest doctorRequest(String licenseNumber) {
+        return new UpsertDoctorProfileRequest(
+                "Doctor",
+                "One",
+                "Cardiology",
+                licenseNumber,
+                "+994501234567",
+                "doctor@saglamol.az",
+                null,
+                ProfileStatus.ACTIVE
+        );
+    }
+
+    private UpsertAgentProfileRequest agentRequest(String employeeCode) {
+        return new UpsertAgentProfileRequest(
+                "Agent",
+                "One",
+                employeeCode,
+                "Sales",
+                "+994501234567",
+                "agent@saglamol.az",
+                ProfileStatus.ACTIVE
+        );
+    }
+
+    private PatientProfile patient(UUID profileId, UUID userId) {
+        Instant now = Instant.now();
+        return new PatientProfile(
+                profileId,
+                userId,
+                "Aga",
+                "Huseyn",
+                LocalDate.of(1995, 1, 1),
+                Gender.MALE,
+                "+994501234567",
+                "aga@saglamol.az",
+                null,
+                null,
+                null,
+                null,
+                ProfileStatus.ACTIVE,
+                now,
+                now
+        );
+    }
+
+    private AgentProfile agent(UUID profileId, UUID userId) {
+        Instant now = Instant.now();
+        return new AgentProfile(
+                profileId,
+                userId,
+                "Agent",
+                "One",
+                "AG-1",
+                "Sales",
+                "+994501234567",
+                "agent@saglamol.az",
+                ProfileStatus.ACTIVE,
+                now,
+                now
+        );
+    }
+
+    private DoctorProfile doctor(UUID doctorProfileId, UUID userId) {
+        Instant now = Instant.now();
+        return new DoctorProfile(
+                doctorProfileId,
+                userId,
+                "Doctor",
+                "One",
+                "LIC-1",
+                null,
+                "Cardiology",
+                "+994501234567",
+                "doctor@saglamol.az",
+                null,
+                ProfileStatus.ACTIVE,
+                now,
+                now
+        );
     }
 }
