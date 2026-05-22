@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="001-create-claim-tables" author="codex">
+        <sql>
+            CREATE TABLE claim (
+                id UUID PRIMARY KEY,
+                patient_id UUID NOT NULL,
+                policy_id UUID NOT NULL,
+                status VARCHAR(50) NOT NULL,
+                claim_type VARCHAR(80) NOT NULL,
+                total_amount DECIMAL(12,2) NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE claim_item (
+                id UUID PRIMARY KEY,
+                claim_id UUID NOT NULL REFERENCES claim(id),
+                service_type VARCHAR(80) NOT NULL,
+                amount DECIMAL(12,2) NOT NULL,
+                service_date DATE NOT NULL
+            );
+
+            CREATE TABLE claim_decision (
+                id UUID PRIMARY KEY,
+                claim_id UUID NOT NULL REFERENCES claim(id),
+                decision VARCHAR(50) NOT NULL,
+                decided_by UUID NOT NULL,
+                reason TEXT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE claim_status_history (
+                id UUID PRIMARY KEY,
+                claim_id UUID NOT NULL REFERENCES claim(id),
+                old_status VARCHAR(50) NULL,
+                new_status VARCHAR(50) NOT NULL,
+                changed_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE outbox_event (
+                id UUID PRIMARY KEY,
+                aggregate_type VARCHAR(80) NOT NULL,
+                aggregate_id UUID NOT NULL,
+                event_type VARCHAR(120) NOT NULL,
+                schema_version VARCHAR(20) NOT NULL,
+                payload TEXT NOT NULL,
+                status VARCHAR(30) NOT NULL DEFAULT 'NEW',
+                retry_count INT NOT NULL DEFAULT 0,
+                next_retry_at TIMESTAMP NULL,
+                last_error TEXT NULL,
+                created_at TIMESTAMP NOT NULL,
+                published_at TIMESTAMP NULL
+            );
+
+            CREATE TABLE consumer_processed_event (
+                event_id UUID NOT NULL,
+                consumer_name VARCHAR(120) NOT NULL,
+                processed_at TIMESTAMP NOT NULL,
+                PRIMARY KEY (event_id, consumer_name)
+            );
+
+            CREATE INDEX idx_outbox_status_retry ON outbox_event(status, next_retry_at, created_at);
+        </sql>
+    </changeSet>
+</databaseChangeLog>

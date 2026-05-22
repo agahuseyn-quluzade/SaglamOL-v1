@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="001-create-user-profile-tables" author="codex">
+        <sql>
+            CREATE TABLE patient_profile (
+                id UUID PRIMARY KEY,
+                user_id UUID NOT NULL UNIQUE,
+                first_name VARCHAR(120) NOT NULL,
+                last_name VARCHAR(120) NOT NULL,
+                date_of_birth DATE NULL,
+                phone VARCHAR(32) NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE doctor_profile (
+                id UUID PRIMARY KEY,
+                user_id UUID NOT NULL UNIQUE,
+                license_no VARCHAR(120) NOT NULL UNIQUE,
+                hospital_id UUID NULL,
+                specialty VARCHAR(160) NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE agent_profile (
+                id UUID PRIMARY KEY,
+                user_id UUID NOT NULL UNIQUE,
+                employee_no VARCHAR(120) NOT NULL UNIQUE,
+                department VARCHAR(160) NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE address (
+                id UUID PRIMARY KEY,
+                owner_id UUID NOT NULL,
+                owner_type VARCHAR(40) NOT NULL,
+                city VARCHAR(120) NOT NULL,
+                line1 VARCHAR(255) NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

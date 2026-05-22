@@ -1,0 +1,485 @@
+name: saglamol
+
+x-app-healthcheck: &app-healthcheck
+  interval: 15s
+  timeout: 5s
+  retries: 30
+  start_period: 180s
+
+x-java-container: &java-container
+  mem_limit: 512m
+
+x-java-environment: &java-environment
+  JAVA_TOOL_OPTIONS: "-XX:MaxRAM=384m -XX:InitialRAMPercentage=10 -Djava.security.egd=file:/dev/./urandom"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: saglamol
+      POSTGRES_USER: ${POSTGRES_USER:-saglamol}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-saglamol} -d saglamol"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saglamol-network
+
+  discovery-server:
+    <<: *java-container
+    build:
+      context: ./infrastructure/discovery-server
+      dockerfile: Dockerfile
+    image: saglamol/discovery-server:local
+    ports:
+      - "8761:8761"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8761/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  config-server:
+    <<: *java-container
+    build:
+      context: ./infrastructure/config-server
+      dockerfile: Dockerfile
+    image: saglamol/config-server:local
+    ports:
+      - "8888:8888"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: native,local
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8888/actuator/health >/dev/null"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  api-gateway:
+    <<: *java-container
+    build:
+      context: ./infrastructure/api-gateway
+      dockerfile: Dockerfile
+    image: saglamol/api-gateway:local
+    ports:
+      - "8080:8080"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      IAM_JWT_SECRET: ${IAM_JWT_SECRET:-dev-local-secret-change-me-dev-local-secret-change-me}
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+      iam-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  iam-service:
+    <<: *java-container
+    build:
+      context: ./services/iam-service
+      dockerfile: Dockerfile
+    image: saglamol/iam-service:local
+    ports:
+      - "8081:8081"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      IAM_DB_URL: jdbc:postgresql://postgres:5432/iam_db
+      IAM_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      IAM_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      IAM_JWT_SECRET: ${IAM_JWT_SECRET:-dev-local-secret-change-me-dev-local-secret-change-me}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8081/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  user-profile-service:
+    <<: *java-container
+    build:
+      context: ./services/user-profile-service
+      dockerfile: Dockerfile
+    image: saglamol/user-profile-service:local
+    ports:
+      - "8082:8082"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      USER_DB_URL: jdbc:postgresql://postgres:5432/user_db
+      USER_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      USER_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8082/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  policy-service:
+    <<: *java-container
+    build:
+      context: ./services/policy-service
+      dockerfile: Dockerfile
+    image: saglamol/policy-service:local
+    ports:
+      - "8083:8083"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      POLICY_DB_URL: jdbc:postgresql://postgres:5432/policy_db
+      POLICY_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      POLICY_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8083/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  claim-service:
+    <<: *java-container
+    build:
+      context: ./services/claim-service
+      dockerfile: Dockerfile
+    image: saglamol/claim-service:local
+    ports:
+      - "8084:8084"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      CLAIM_DB_URL: jdbc:postgresql://postgres:5432/claim_db
+      CLAIM_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      CLAIM_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8084/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  health-record-service:
+    <<: *java-container
+    build:
+      context: ./services/health-record-service
+      dockerfile: Dockerfile
+    image: saglamol/health-record-service:local
+    ports:
+      - "8085:8085"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      HEALTH_RECORD_DB_URL: jdbc:postgresql://postgres:5432/health_record_db
+      HEALTH_RECORD_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      HEALTH_RECORD_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8085/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  ai-risk-service:
+    <<: *java-container
+    build:
+      context: ./services/ai-risk-service
+      dockerfile: Dockerfile
+    image: saglamol/ai-risk-service:local
+    ports:
+      - "8086:8086"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      AI_ANALYSIS_DB_URL: jdbc:postgresql://postgres:5432/ai_analysis_db
+      AI_ANALYSIS_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      AI_ANALYSIS_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      AI_API_KEY: ${AI_API_KEY:-}
+      AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
+      AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8086/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  fraud-detection-service:
+    <<: *java-container
+    build:
+      context: ./services/fraud-detection-service
+      dockerfile: Dockerfile
+    image: saglamol/fraud-detection-service:local
+    ports:
+      - "8087:8087"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      FRAUD_DB_URL: jdbc:postgresql://postgres:5432/fraud_db
+      FRAUD_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      FRAUD_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8087/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  notification-service:
+    <<: *java-container
+    build:
+      context: ./services/notification-service
+      dockerfile: Dockerfile
+    image: saglamol/notification-service:local
+    ports:
+      - "8088:8088"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      NOTIFICATION_DB_URL: jdbc:postgresql://postgres:5432/notification_db
+      NOTIFICATION_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      NOTIFICATION_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8088/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  payment-service:
+    <<: *java-container
+    build:
+      context: ./services/payment-service
+      dockerfile: Dockerfile
+    image: saglamol/payment-service:local
+    ports:
+      - "8089:8089"
+    environment:
+      <<: *java-environment
+      SPRING_PROFILES_ACTIVE: local
+      EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
+      PAYMENT_DB_URL: jdbc:postgresql://postgres:5432/payment_db
+      PAYMENT_DB_USERNAME: ${POSTGRES_USER:-saglamol}
+      PAYMENT_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      discovery-server:
+        condition: service_healthy
+      config-server:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8089/actuator/health >/dev/null"]
+      <<: *app-healthcheck
+    restart: unless-stopped
+    networks:
+      - saglamol-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saglamol-network
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.6.0
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    healthcheck:
+      test: ["CMD-SHELL", "cub zk-ready localhost:2181 10 >/dev/null"]
+      interval: 10s
+      timeout: 15s
+      retries: 20
+    networks:
+      - saglamol-network
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.0
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+    networks:
+      - saglamol-network
+
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - saglamol-network
+
+volumes:
+  postgres-data:
+  minio-data:
+
+networks:
+  saglamol-network:
+    driver: bridge

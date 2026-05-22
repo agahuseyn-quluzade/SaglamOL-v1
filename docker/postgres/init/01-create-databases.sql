@@ -1,0 +1,9 @@
+CREATE DATABASE iam_db;
+CREATE DATABASE user_db;
+CREATE DATABASE policy_db;
+CREATE DATABASE claim_db;
+CREATE DATABASE health_record_db;
+CREATE DATABASE ai_analysis_db;
+CREATE DATABASE fraud_db;
+CREATE DATABASE notification_db;
+CREATE DATABASE payment_db;

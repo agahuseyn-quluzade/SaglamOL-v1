@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="001-create-policy-tables" author="codex">
+        <sql>
+            CREATE TABLE insurance_plan (
+                id UUID PRIMARY KEY,
+                code VARCHAR(80) NOT NULL UNIQUE,
+                name VARCHAR(160) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                monthly_price DECIMAL(12,2) NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE coverage_rule (
+                id UUID PRIMARY KEY,
+                plan_id UUID NOT NULL REFERENCES insurance_plan(id),
+                service_type VARCHAR(80) NOT NULL,
+                coverage_percent INT NOT NULL,
+                annual_limit DECIMAL(12,2) NOT NULL,
+                waiting_period_days INT NOT NULL DEFAULT 0
+            );
+
+            CREATE TABLE policy (
+                id UUID PRIMARY KEY,
+                patient_id UUID NOT NULL,
+                plan_id UUID NOT NULL REFERENCES insurance_plan(id),
+                status VARCHAR(30) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE policy_limit_usage (
+                id UUID PRIMARY KEY,
+                policy_id UUID NOT NULL REFERENCES policy(id),
+                service_type VARCHAR(80) NOT NULL,
+                annual_limit DECIMAL(12,2) NOT NULL,
+                used_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+                reserved_amount DECIMAL(12,2) NOT NULL DEFAULT 0,
+                version BIGINT NOT NULL DEFAULT 0,
+                UNIQUE(policy_id, service_type)
+            );
+
+            CREATE TABLE policy_limit_reservation (
+                id UUID PRIMARY KEY,
+                policy_id UUID NOT NULL REFERENCES policy(id),
+                claim_id UUID NOT NULL,
+                service_type VARCHAR(80) NOT NULL,
+                reserved_amount DECIMAL(12,2) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL,
+                UNIQUE(claim_id, service_type)
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,29 @@
+server:
+  port: 8082
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  application:
+    name: user-profile-service
+  datasource:
+    url: ${USER_DB_URL:jdbc:postgresql://localhost:5432/user_db}
+    username: ${USER_DB_USERNAME:saglamol}
+    password: ${USER_DB_PASSWORD:saglamol}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

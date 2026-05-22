@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="001-create-ai-risk-tables" author="codex">
+        <sql>
+            CREATE TABLE risk_analysis (
+                id UUID PRIMARY KEY,
+                claim_id UUID NOT NULL UNIQUE,
+                risk_score INT NOT NULL,
+                risk_level VARCHAR(30) NOT NULL,
+                confidence DECIMAL(5,4) NOT NULL,
+                model_version VARCHAR(80) NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE risk_reason (
+                id UUID PRIMARY KEY,
+                analysis_id UUID NOT NULL REFERENCES risk_analysis(id),
+                reason_code VARCHAR(80) NOT NULL,
+                description TEXT NOT NULL
+            );
+
+            CREATE TABLE ai_request_log (
+                id UUID PRIMARY KEY,
+                claim_id UUID NOT NULL,
+                provider VARCHAR(80) NOT NULL,
+                latency_ms BIGINT NOT NULL,
+                status VARCHAR(40) NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

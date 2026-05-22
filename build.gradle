@@ -1,0 +1,75 @@
+plugins {
+    id 'java'
+    id 'java-library'
+    id 'org.springframework.boot' version '3.3.6' apply false
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'az.saglamol'
+version = '0.0.1-SNAPSHOT'
+description = 'SaglamOL e-health insurance platform'
+
+ext {
+    springCloudVersion = '2023.0.4'
+    lombokVersion = '1.18.34'
+    mapstructVersion = '1.6.3'
+}
+
+allprojects {
+    group = rootProject.group
+    version = rootProject.version
+
+    repositories {
+        mavenCentral()
+    }
+}
+
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom "org.springframework.boot:spring-boot-dependencies:3.3.6"
+            mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
+        }
+    }
+
+    dependencies {
+        compileOnly "org.projectlombok:lombok:${lombokVersion}"
+        annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+
+        testImplementation 'org.junit.jupiter:junit-jupiter'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}
+
+configure(subprojects.findAll { it.path.startsWith(':common:') }) {
+    apply plugin: 'java-library'
+}
+
+configure(subprojects.findAll { it.path.startsWith(':infrastructure:') || it.path.startsWith(':services:') }) {
+    apply plugin: 'org.springframework.boot'
+
+    dependencies {
+        implementation 'org.springframework.boot:spring-boot-starter-actuator'
+        implementation 'org.springframework.boot:spring-boot-starter-validation'
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    }
+}
+
+configure(subprojects.findAll { it.path.startsWith(':services:') }) {
+    dependencies {
+        implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+    }
+}
