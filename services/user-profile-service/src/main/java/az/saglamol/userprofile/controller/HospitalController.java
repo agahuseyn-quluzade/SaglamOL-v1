@@ -8,7 +8,6 @@ import az.saglamol.userprofile.dto.response.DoctorHospitalAssignmentResponse;
 import az.saglamol.userprofile.dto.response.HospitalBranchResponse;
 import az.saglamol.userprofile.dto.response.HospitalResponse;
 import az.saglamol.userprofile.dto.response.HospitalStaffResponse;
-import az.saglamol.userprofile.security.ProviderAccessService;
 import az.saglamol.userprofile.service.HospitalService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -28,11 +27,9 @@ import java.util.UUID;
 public class HospitalController {
 
     private final HospitalService hospitalService;
-    private final ProviderAccessService providerAccessService;
 
-    public HospitalController(HospitalService hospitalService, ProviderAccessService providerAccessService) {
+    public HospitalController(HospitalService hospitalService) {
         this.hospitalService = hospitalService;
-        this.providerAccessService = providerAccessService;
     }
 
     @PostMapping
@@ -40,13 +37,11 @@ public class HospitalController {
     public HospitalResponse createHospital(
             @Valid @RequestBody CreateHospitalRequest request
     ) {
-        providerAccessService.requireHospitalWrite();
         return hospitalService.createHospital(request);
     }
 
     @GetMapping
     public List<HospitalResponse> hospitals() {
-        providerAccessService.requireHospitalRead();
         return hospitalService.hospitals();
     }
 
@@ -54,7 +49,6 @@ public class HospitalController {
     public HospitalResponse hospital(
             @PathVariable UUID hospitalId
     ) {
-        providerAccessService.requireHospitalRead();
         return hospitalService.hospital(hospitalId);
     }
 
@@ -64,7 +58,6 @@ public class HospitalController {
             @PathVariable UUID hospitalId,
             @Valid @RequestBody CreateHospitalBranchRequest request
     ) {
-        providerAccessService.requireHospitalWrite();
         return hospitalService.createBranch(hospitalId, request);
     }
 
@@ -72,7 +65,6 @@ public class HospitalController {
     public List<HospitalBranchResponse> branches(
             @PathVariable UUID hospitalId
     ) {
-        providerAccessService.requireHospitalRead();
         return hospitalService.branches(hospitalId);
     }
 
@@ -82,7 +74,6 @@ public class HospitalController {
             @PathVariable UUID hospitalId,
             @Valid @RequestBody CreateHospitalStaffRequest request
     ) {
-        providerAccessService.requireHospitalWrite();
         return hospitalService.createStaff(hospitalId, request);
     }
 
@@ -90,7 +81,6 @@ public class HospitalController {
     public List<HospitalStaffResponse> staff(
             @PathVariable UUID hospitalId
     ) {
-        providerAccessService.requireHospitalRead();
         return hospitalService.staff(hospitalId);
     }
 
@@ -101,7 +91,6 @@ public class HospitalController {
             @PathVariable UUID doctorProfileId,
             @Valid @RequestBody AssignDoctorToHospitalRequest request
     ) {
-        providerAccessService.requireHospitalWrite();
         return hospitalService.assignDoctor(hospitalId, doctorProfileId, request);
     }
 
@@ -109,7 +98,6 @@ public class HospitalController {
     public List<DoctorHospitalAssignmentResponse> doctorAssignments(
             @PathVariable UUID hospitalId
     ) {
-        providerAccessService.requireHospitalRead();
         return hospitalService.doctorAssignments(hospitalId);
     }
 }

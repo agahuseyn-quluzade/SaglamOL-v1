@@ -7,6 +7,7 @@ import az.saglamol.userprofile.repository.DoctorProfileRepository;
 import az.saglamol.userprofile.repository.HospitalBranchRepository;
 import az.saglamol.userprofile.repository.HospitalRepository;
 import az.saglamol.userprofile.repository.HospitalStaffProfileRepository;
+import az.saglamol.userprofile.security.ProviderAccessService;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -24,7 +25,8 @@ class HospitalServiceTest {
                 mock(HospitalBranchRepository.class),
                 mock(HospitalStaffProfileRepository.class),
                 mock(DoctorHospitalAssignmentRepository.class),
-                mock(DoctorProfileRepository.class)
+                mock(DoctorProfileRepository.class),
+                mock(ProviderAccessService.class)
         );
 
         when(hospitalRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));

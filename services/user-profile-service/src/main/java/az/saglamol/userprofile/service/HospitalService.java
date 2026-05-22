@@ -19,6 +19,7 @@ import az.saglamol.userprofile.repository.DoctorProfileRepository;
 import az.saglamol.userprofile.repository.HospitalBranchRepository;
 import az.saglamol.userprofile.repository.HospitalRepository;
 import az.saglamol.userprofile.repository.HospitalStaffProfileRepository;
+import az.saglamol.userprofile.security.ProviderAccessService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,23 +35,27 @@ public class HospitalService {
     private final HospitalStaffProfileRepository hospitalStaffProfileRepository;
     private final DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository;
     private final DoctorProfileRepository doctorProfileRepository;
+    private final ProviderAccessService providerAccessService;
 
     public HospitalService(
             HospitalRepository hospitalRepository,
             HospitalBranchRepository hospitalBranchRepository,
             HospitalStaffProfileRepository hospitalStaffProfileRepository,
             DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository,
-            DoctorProfileRepository doctorProfileRepository
+            DoctorProfileRepository doctorProfileRepository,
+            ProviderAccessService providerAccessService
     ) {
         this.hospitalRepository = hospitalRepository;
         this.hospitalBranchRepository = hospitalBranchRepository;
         this.hospitalStaffProfileRepository = hospitalStaffProfileRepository;
         this.doctorHospitalAssignmentRepository = doctorHospitalAssignmentRepository;
         this.doctorProfileRepository = doctorProfileRepository;
+        this.providerAccessService = providerAccessService;
     }
 
     @Transactional
     public HospitalResponse createHospital(CreateHospitalRequest request) {
+        providerAccessService.requireCreateHospital();
         if (hospitalRepository.existsByTaxId(request.taxId()) || hospitalRepository.existsByLicenseNo(request.licenseNo())) {
             throw new UserProfileException("HOSPITAL_ALREADY_EXISTS", "Hospital tax id or license number already exists");
         }
@@ -69,18 +74,24 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public List<HospitalResponse> hospitals() {
-        return hospitalRepository.findAll().stream()
+        var scope = providerAccessService.readableHospitalScope();
+        var hospitals = scope
+                .map(hospitalRepository::findAllById)
+                .orElseGet(hospitalRepository::findAll);
+        return hospitals.stream()
                 .map(this::toResponse)
                 .toList();
     }
 
     @Transactional(readOnly = true)
     public HospitalResponse hospital(UUID hospitalId) {
+        providerAccessService.requireHospitalRead(hospitalId);
         return toResponse(findHospital(hospitalId));
     }
 
     @Transactional
     public HospitalBranchResponse createBranch(UUID hospitalId, CreateHospitalBranchRequest request) {
+        providerAccessService.requireHospitalWrite(hospitalId);
         findHospital(hospitalId);
         HospitalBranch branch = new HospitalBranch(
                 UUID.randomUUID(),
@@ -96,6 +107,7 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public List<HospitalBranchResponse> branches(UUID hospitalId) {
+        providerAccessService.requireHospitalRead(hospitalId);
         findHospital(hospitalId);
         return hospitalBranchRepository.findAllByHospitalId(hospitalId).stream()
                 .map(this::toResponse)
@@ -104,6 +116,7 @@ public class HospitalService {
 
     @Transactional
     public HospitalStaffResponse createStaff(UUID hospitalId, CreateHospitalStaffRequest request) {
+        providerAccessService.requireHospitalWrite(hospitalId);
         findHospital(hospitalId);
         if (request.branchId() != null) {
             validateBranch(hospitalId, request.branchId());
@@ -124,6 +137,7 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public List<HospitalStaffResponse> staff(UUID hospitalId) {
+        providerAccessService.requireHospitalRead(hospitalId);
         findHospital(hospitalId);
         return hospitalStaffProfileRepository.findAllByHospitalId(hospitalId).stream()
                 .map(this::toResponse)
@@ -133,6 +147,7 @@ public class HospitalService {
     @Transactional
     public DoctorHospitalAssignmentResponse assignDoctor(UUID hospitalId, UUID doctorProfileId,
                                                          AssignDoctorToHospitalRequest request) {
+        providerAccessService.requireHospitalWrite(hospitalId);
         findHospital(hospitalId);
         if (!doctorProfileRepository.existsById(doctorProfileId)) {
             throw new UserProfileException("DOCTOR_NOT_FOUND", "Doctor profile was not found");
@@ -157,6 +172,7 @@ public class HospitalService {
 
     @Transactional(readOnly = true)
     public List<DoctorHospitalAssignmentResponse> doctorAssignments(UUID hospitalId) {
+        providerAccessService.requireHospitalRead(hospitalId);
         findHospital(hospitalId);
         return doctorHospitalAssignmentRepository.findAllByHospitalId(hospitalId).stream()
                 .map(this::toResponse)
