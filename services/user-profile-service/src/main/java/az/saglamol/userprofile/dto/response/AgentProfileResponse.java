@@ -7,6 +7,7 @@ import az.saglamol.userprofile.entity.ProfileStatus;
 public record AgentProfileResponse(
         UUID id,
         UUID iamUserId,
+        UUID insuranceCompanyId,
         String firstName,
         String lastName,
         String employeeCode,

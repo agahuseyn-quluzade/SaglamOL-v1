@@ -19,6 +19,7 @@ import az.saglamol.userprofile.mapper.ProfileMapper;
 import az.saglamol.userprofile.repository.AgentProfileRepository;
 import az.saglamol.userprofile.repository.DoctorHospitalAssignmentRepository;
 import az.saglamol.userprofile.repository.DoctorProfileRepository;
+import az.saglamol.userprofile.repository.InsuranceCompanyRepository;
 import az.saglamol.userprofile.repository.PatientProfileRepository;
 import az.saglamol.userprofile.security.ProviderAccessService;
 import org.junit.jupiter.api.AfterEach;
@@ -46,12 +47,14 @@ class UserProfileServiceTest {
     private final PatientProfileRepository patientProfileRepository = mock(PatientProfileRepository.class);
     private final DoctorProfileRepository doctorProfileRepository = mock(DoctorProfileRepository.class);
     private final AgentProfileRepository agentProfileRepository = mock(AgentProfileRepository.class);
+    private final InsuranceCompanyRepository insuranceCompanyRepository = mock(InsuranceCompanyRepository.class);
     private final DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository = mock(DoctorHospitalAssignmentRepository.class);
     private final ProviderAccessService providerAccessService = mock(ProviderAccessService.class);
     private final UserProfileService service = new UserProfileService(
             patientProfileRepository,
             doctorProfileRepository,
             agentProfileRepository,
+            insuranceCompanyRepository,
             doctorHospitalAssignmentRepository,
             new RoleChecker(),
             providerAccessService,
@@ -193,10 +196,12 @@ class UserProfileServiceTest {
     @Test
     void agentCreateSuccess() {
         UUID userId = UUID.randomUUID();
+        UUID companyId = UUID.randomUUID();
         setContext(userId, RoleConstants.AGENT);
+        when(insuranceCompanyRepository.existsById(companyId)).thenReturn(true);
         when(agentProfileRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        var response = service.createAgentProfile(agentRequest("AG-1"));
+        var response = service.createAgentProfile(agentRequest(companyId, "AG-1"));
 
         assertEquals(userId, response.iamUserId());
         assertEquals("AG-1", response.employeeCode());
@@ -204,10 +209,12 @@ class UserProfileServiceTest {
 
     @Test
     void duplicateEmployeeCodeFails() {
+        UUID companyId = UUID.randomUUID();
         setContext(UUID.randomUUID(), RoleConstants.AGENT);
-        when(agentProfileRepository.existsByEmployeeCode("AG-1")).thenReturn(true);
+        when(insuranceCompanyRepository.existsById(companyId)).thenReturn(true);
+        when(agentProfileRepository.existsByInsuranceCompanyIdAndEmployeeCode(companyId, "AG-1")).thenReturn(true);
 
-        assertThrows(UserProfileException.class, () -> service.createAgentProfile(agentRequest("AG-1")));
+        assertThrows(UserProfileException.class, () -> service.createAgentProfile(agentRequest(companyId, "AG-1")));
     }
 
     @Test
@@ -223,10 +230,10 @@ class UserProfileServiceTest {
     void searchPatientsReturnsPaginatedResult() {
         setContext(UUID.randomUUID(), RoleConstants.ADMIN);
         var pageable = PageRequest.of(0, 10);
-        when(patientProfileRepository.search(eq("aga"), eq(ProfileStatus.ACTIVE), eq(pageable)))
+        when(patientProfileRepository.search(eq("aga"), eq(ProfileStatus.ACTIVE), eq("Aga"), eq("aga@saglamol.az"), eq(pageable)))
                 .thenReturn(new PageImpl<>(List.of(patient(UUID.randomUUID(), UUID.randomUUID())), pageable, 1));
 
-        var page = service.searchPatients("aga", ProfileStatus.ACTIVE, pageable);
+        var page = service.searchPatients("aga", ProfileStatus.ACTIVE, "Aga", "aga@saglamol.az", pageable);
 
         assertEquals(1, page.getTotalElements());
     }
@@ -269,8 +276,9 @@ class UserProfileServiceTest {
         );
     }
 
-    private UpsertAgentProfileRequest agentRequest(String employeeCode) {
+    private UpsertAgentProfileRequest agentRequest(UUID companyId, String employeeCode) {
         return new UpsertAgentProfileRequest(
+                companyId,
                 "Agent",
                 "One",
                 employeeCode,
@@ -307,6 +315,7 @@ class UserProfileServiceTest {
         return new AgentProfile(
                 profileId,
                 userId,
+                UUID.randomUUID(),
                 "Agent",
                 "One",
                 "AG-1",

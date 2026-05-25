@@ -1,14 +1,17 @@
 package az.saglamol.userprofile.controller;
 
+import az.saglamol.common.security.AuthContextHolder;
 import az.saglamol.common.exception.ErrorResponse;
 import az.saglamol.common.security.InternalAuthHeaders;
 import az.saglamol.userprofile.dto.request.UpsertAgentProfileRequest;
 import az.saglamol.userprofile.dto.request.UpsertDoctorProfileRequest;
 import az.saglamol.userprofile.dto.request.UpsertPatientProfileRequest;
+import az.saglamol.userprofile.dto.response.AgentCompanyResponse;
 import az.saglamol.userprofile.dto.response.AgentProfileResponse;
 import az.saglamol.userprofile.dto.response.DoctorProfileResponse;
 import az.saglamol.userprofile.dto.response.PatientProfileResponse;
 import az.saglamol.userprofile.entity.ProfileStatus;
+import az.saglamol.userprofile.service.AgentCompanyService;
 import az.saglamol.userprofile.service.UserProfileService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -24,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -53,9 +57,11 @@ import java.util.UUID;
 public class UserProfileController {
 
     private final UserProfileService userProfileService;
+    private final AgentCompanyService agentCompanyService;
 
-    public UserProfileController(UserProfileService userProfileService) {
+    public UserProfileController(UserProfileService userProfileService, AgentCompanyService agentCompanyService) {
         this.userProfileService = userProfileService;
+        this.agentCompanyService = agentCompanyService;
     }
 
     @PostMapping("/patients")
@@ -94,9 +100,11 @@ public class UserProfileController {
     public Page<PatientProfileResponse> searchPatients(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) ProfileStatus status,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
     ) {
-        return userProfileService.searchPatients(query, status, pageable);
+        return userProfileService.searchPatients(query, status, name, email, pageable);
     }
 
     @PostMapping("/doctors")
@@ -135,9 +143,13 @@ public class UserProfileController {
     public Page<DoctorProfileResponse> searchDoctors(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) ProfileStatus status,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String specialty,
+            @RequestParam(required = false) UUID hospitalId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
     ) {
-        return userProfileService.searchDoctors(query, status, pageable);
+        return userProfileService.searchDoctors(query, status, name, email, specialty, hospitalId, pageable);
     }
 
     @PostMapping("/agents")
@@ -176,9 +188,32 @@ public class UserProfileController {
     public Page<AgentProfileResponse> searchAgents(
             @RequestParam(required = false) String query,
             @RequestParam(required = false) ProfileStatus status,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) UUID companyId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
     ) {
-        return userProfileService.searchAgents(query, status, pageable);
+        return userProfileService.searchAgents(query, status, name, email, companyId, pageable);
+    }
+
+    @PatchMapping("/agents/{agentProfileId}/insurance-company/{companyId}")
+    @Operation(summary = "Link agent to insurance company", description = "Links an existing agent profile to an insurance company.")
+    @GatewayIdentityHeaders
+    public AgentCompanyResponse linkAgentToCompany(
+            @PathVariable UUID agentProfileId,
+            @PathVariable UUID companyId
+    ) {
+        return agentCompanyService.linkAgentToCompany(agentProfileId, companyId, AuthContextHolder.getRequired());
+    }
+
+    @GetMapping("/agents/by-company/{companyId}")
+    @Operation(summary = "Get agents by company", description = "Returns paginated agents scoped to an insurance company.")
+    @GatewayIdentityHeaders
+    public Page<AgentProfileResponse> agentsByCompany(
+            @PathVariable UUID companyId,
+            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
+    ) {
+        return agentCompanyService.getAgentsByCompany(companyId, AuthContextHolder.getRequired(), pageable);
     }
 
     @Parameter(name = InternalAuthHeaders.USER_ID, in = ParameterIn.HEADER, required = true,

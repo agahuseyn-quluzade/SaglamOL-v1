@@ -151,10 +151,12 @@ services:
     environment:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
       USER_DB_URL: jdbc:postgresql://postgres:5432/user_db
       USER_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       USER_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -180,13 +182,15 @@ services:
     environment:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
       POLICY_DB_URL: jdbc:postgresql://postgres:5432/policy_db
       POLICY_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       POLICY_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -216,11 +220,13 @@ services:
     environment:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
       CLAIM_DB_URL: jdbc:postgresql://postgres:5432/claim_db
       CLAIM_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       CLAIM_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -248,14 +254,17 @@ services:
     environment:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
       HEALTH_RECORD_DB_URL: jdbc:postgresql://postgres:5432/health_record_db
       HEALTH_RECORD_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       HEALTH_RECORD_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
-      MINIO_ENDPOINT: http://minio:9000
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-saglamol-documents}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -285,14 +294,17 @@ services:
     environment:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
       AI_ANALYSIS_DB_URL: jdbc:postgresql://postgres:5432/ai_analysis_db
       AI_ANALYSIS_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       AI_ANALYSIS_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
       AI_API_KEY: ${AI_API_KEY:-}
       AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
       AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
+      AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-10}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -320,11 +332,13 @@ services:
     environment:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
       FRAUD_DB_URL: jdbc:postgresql://postgres:5432/fraud_db
       FRAUD_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       FRAUD_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -352,11 +366,13 @@ services:
     environment:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
       NOTIFICATION_DB_URL: jdbc:postgresql://postgres:5432/notification_db
       NOTIFICATION_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       NOTIFICATION_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy
@@ -384,11 +400,13 @@ services:
     environment:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
+      CONFIG_SERVER_URL: http://config-server:8888
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
       PAYMENT_DB_URL: jdbc:postgresql://postgres:5432/payment_db
       PAYMENT_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       PAYMENT_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
     depends_on:
       postgres:
         condition: service_healthy

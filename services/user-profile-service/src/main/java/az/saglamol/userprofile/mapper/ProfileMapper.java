@@ -62,6 +62,7 @@ public class ProfileMapper {
         return new AgentProfileResponse(
                 profile.getId(),
                 profile.getIamUserId(),
+                profile.getInsuranceCompanyId(),
                 profile.getFirstName(),
                 profile.getLastName(),
                 profile.getEmployeeCode(),

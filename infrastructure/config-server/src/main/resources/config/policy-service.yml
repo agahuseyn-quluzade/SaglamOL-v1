@@ -1,0 +1,46 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: policy-service
+  datasource:
+    url: ${POLICY_DB_URL:jdbc:postgresql://localhost:5432/policy_db}
+    username: ${POLICY_DB_USERNAME:${POSTGRES_USER:saglamol}}
+    password: ${POLICY_DB_PASSWORD:${POSTGRES_PASSWORD:saglamol}}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.xml
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+logging:
+  pattern:
+    level: "%5p [%X{correlationId:-}]"
+
+saglamol:
+  security:
+    internal-auth:
+      enabled: true
+      secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
+  clients:
+    user-profile:
+      base-url: ${USER_PROFILE_SERVICE_URL:http://localhost:8082}

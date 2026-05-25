@@ -19,6 +19,9 @@ public class AgentProfile {
     @Column(name = "user_id", nullable = false, unique = true)
     private UUID iamUserId;
 
+    @Column(name = "insurance_company_id", nullable = false)
+    private UUID insuranceCompanyId;
+
     @Column(name = "first_name", nullable = false, length = 120)
     private String firstName;
 
@@ -53,8 +56,15 @@ public class AgentProfile {
     public AgentProfile(UUID id, UUID iamUserId, String firstName, String lastName, String employeeCode,
                         String department, String phone, String email, ProfileStatus profileStatus,
                         Instant createdAt, Instant updatedAt) {
+        this(id, iamUserId, null, firstName, lastName, employeeCode, department, phone, email, profileStatus, createdAt, updatedAt);
+    }
+
+    public AgentProfile(UUID id, UUID iamUserId, UUID insuranceCompanyId, String firstName, String lastName,
+                        String employeeCode, String department, String phone, String email,
+                        ProfileStatus profileStatus, Instant createdAt, Instant updatedAt) {
         this.id = id;
         this.iamUserId = iamUserId;
+        this.insuranceCompanyId = insuranceCompanyId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.employeeCode = employeeCode;
@@ -66,8 +76,9 @@ public class AgentProfile {
         this.updatedAt = updatedAt;
     }
 
-    public void update(String firstName, String lastName, String employeeCode, String department, String phone,
+    public void update(UUID insuranceCompanyId, String firstName, String lastName, String employeeCode, String department, String phone,
                        String email, ProfileStatus profileStatus, Instant updatedAt) {
+        this.insuranceCompanyId = insuranceCompanyId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.employeeCode = employeeCode;
@@ -75,6 +86,11 @@ public class AgentProfile {
         this.phone = phone;
         this.email = email;
         this.profileStatus = profileStatus;
+        this.updatedAt = updatedAt;
+    }
+
+    public void linkToCompany(UUID insuranceCompanyId, Instant updatedAt) {
+        this.insuranceCompanyId = insuranceCompanyId;
         this.updatedAt = updatedAt;
     }
 
@@ -88,6 +104,10 @@ public class AgentProfile {
 
     public UUID getIamUserId() {
         return iamUserId;
+    }
+
+    public UUID getInsuranceCompanyId() {
+        return insuranceCompanyId;
     }
 
     public String getFirstName() {

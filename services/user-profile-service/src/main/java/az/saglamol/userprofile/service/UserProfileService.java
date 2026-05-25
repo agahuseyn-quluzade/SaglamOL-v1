@@ -18,6 +18,7 @@ import az.saglamol.userprofile.mapper.ProfileMapper;
 import az.saglamol.userprofile.repository.AgentProfileRepository;
 import az.saglamol.userprofile.repository.DoctorHospitalAssignmentRepository;
 import az.saglamol.userprofile.repository.DoctorProfileRepository;
+import az.saglamol.userprofile.repository.InsuranceCompanyRepository;
 import az.saglamol.userprofile.repository.PatientProfileRepository;
 import az.saglamol.userprofile.security.ProviderAccessService;
 import org.springframework.data.domain.Page;
@@ -35,6 +36,7 @@ public class UserProfileService {
     private final PatientProfileRepository patientProfileRepository;
     private final DoctorProfileRepository doctorProfileRepository;
     private final AgentProfileRepository agentProfileRepository;
+    private final InsuranceCompanyRepository insuranceCompanyRepository;
     private final DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository;
     private final RoleChecker roleChecker;
     private final ProviderAccessService providerAccessService;
@@ -44,6 +46,7 @@ public class UserProfileService {
             PatientProfileRepository patientProfileRepository,
             DoctorProfileRepository doctorProfileRepository,
             AgentProfileRepository agentProfileRepository,
+            InsuranceCompanyRepository insuranceCompanyRepository,
             DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository,
             RoleChecker roleChecker,
             ProviderAccessService providerAccessService,
@@ -52,6 +55,7 @@ public class UserProfileService {
         this.patientProfileRepository = patientProfileRepository;
         this.doctorProfileRepository = doctorProfileRepository;
         this.agentProfileRepository = agentProfileRepository;
+        this.insuranceCompanyRepository = insuranceCompanyRepository;
         this.doctorHospitalAssignmentRepository = doctorHospitalAssignmentRepository;
         this.roleChecker = roleChecker;
         this.providerAccessService = providerAccessService;
@@ -123,9 +127,10 @@ public class UserProfileService {
     }
 
     @Transactional(readOnly = true)
-    public Page<PatientProfileResponse> searchPatients(String query, ProfileStatus status, Pageable pageable) {
+    public Page<PatientProfileResponse> searchPatients(String query, ProfileStatus status, String name,
+                                                       String email, Pageable pageable) {
         roleChecker.requireAnyRole(RoleConstants.ADMIN, RoleConstants.AGENT);
-        return patientProfileRepository.search(query, status, pageable).map(profileMapper::toResponse);
+        return patientProfileRepository.search(query, status, name, email, pageable).map(profileMapper::toResponse);
     }
 
     @Transactional
@@ -200,9 +205,10 @@ public class UserProfileService {
     }
 
     @Transactional(readOnly = true)
-    public Page<DoctorProfileResponse> searchDoctors(String query, ProfileStatus status, Pageable pageable) {
+    public Page<DoctorProfileResponse> searchDoctors(String query, ProfileStatus status, String name,
+                                                     String email, String specialty, UUID hospitalId, Pageable pageable) {
         roleChecker.requireAnyRole(RoleConstants.ADMIN, RoleConstants.AGENT, RoleConstants.HOSPITAL_ADMIN, RoleConstants.HOSPITAL_STAFF);
-        Page<DoctorProfile> page = doctorProfileRepository.search(query, status, pageable);
+        Page<DoctorProfile> page = doctorProfileRepository.search(query, status, name, email, specialty, hospitalId, pageable);
         if (roleChecker.isAdmin() || roleChecker.isAgent()) {
             return page.map(profileMapper::toResponse);
         }
@@ -220,13 +226,17 @@ public class UserProfileService {
         if (agentProfileRepository.existsByIamUserId(iamUserId)) {
             throw conflict("Agent profile already exists");
         }
-        if (agentProfileRepository.existsByEmployeeCode(request.employeeCode())) {
+        if (!insuranceCompanyRepository.existsById(request.insuranceCompanyId())) {
+            throw notFound("INSURANCE_COMPANY_NOT_FOUND", "Insurance company was not found");
+        }
+        if (agentProfileRepository.existsByInsuranceCompanyIdAndEmployeeCode(request.insuranceCompanyId(), request.employeeCode())) {
             throw conflict("Agent employee code already exists");
         }
         Instant now = Instant.now();
         AgentProfile profile = new AgentProfile(
                 UUID.randomUUID(),
                 iamUserId,
+                request.insuranceCompanyId(),
                 request.firstName(),
                 request.lastName(),
                 request.employeeCode(),
@@ -257,12 +267,17 @@ public class UserProfileService {
     public AgentProfileResponse updateAgentProfile(UUID profileId, UpsertAgentProfileRequest request) {
         AgentProfile profile = agentById(profileId);
         requireAgentManage(profile);
-        if (agentProfileRepository.existsByEmployeeCodeAndIamUserIdNot(request.employeeCode(), profile.getIamUserId())) {
+        if (!insuranceCompanyRepository.existsById(request.insuranceCompanyId())) {
+            throw notFound("INSURANCE_COMPANY_NOT_FOUND", "Insurance company was not found");
+        }
+        if (agentProfileRepository.existsByInsuranceCompanyIdAndEmployeeCodeAndIamUserIdNot(
+                request.insuranceCompanyId(), request.employeeCode(), profile.getIamUserId())) {
             throw conflict("Agent employee code already exists");
         }
         ProfileStatus nextStatus = requestedStatus(request.profileStatus());
         validateStatusChange(profile.getProfileStatus(), nextStatus);
         profile.update(
+                request.insuranceCompanyId(),
                 request.firstName(),
                 request.lastName(),
                 request.employeeCode(),
@@ -276,9 +291,10 @@ public class UserProfileService {
     }
 
     @Transactional(readOnly = true)
-    public Page<AgentProfileResponse> searchAgents(String query, ProfileStatus status, Pageable pageable) {
+    public Page<AgentProfileResponse> searchAgents(String query, ProfileStatus status, String name,
+                                                   String email, UUID companyId, Pageable pageable) {
         roleChecker.requireRole(RoleConstants.ADMIN);
-        return agentProfileRepository.search(query, status, pageable).map(profileMapper::toResponse);
+        return agentProfileRepository.search(query, status, name, email, companyId, pageable).map(profileMapper::toResponse);
     }
 
     private boolean canReadDoctor(DoctorProfile profile) {

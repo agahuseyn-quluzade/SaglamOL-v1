@@ -259,4 +259,18 @@
             </sql>
         </rollback>
     </changeSet>
+
+    <changeSet id="006-add-insurance-company-roles" author="codex">
+        <sql>
+            INSERT INTO role (id, code, name) VALUES
+                ('00000000-0000-0000-0000-000000000008', 'INSURANCE_ADMIN', 'Insurance Admin'),
+                ('00000000-0000-0000-0000-000000000009', 'INSURANCE_STAFF', 'Insurance Staff')
+            ON CONFLICT (code) DO NOTHING;
+        </sql>
+        <rollback>
+            <sql>
+                DELETE FROM role WHERE code IN ('INSURANCE_ADMIN', 'INSURANCE_STAFF');
+            </sql>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>

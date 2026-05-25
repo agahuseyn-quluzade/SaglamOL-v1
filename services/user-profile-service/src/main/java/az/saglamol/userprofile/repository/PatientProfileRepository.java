@@ -16,9 +16,15 @@ public interface PatientProfileRepository extends JpaRepository<PatientProfile, 
 
     boolean existsByIamUserId(UUID iamUserId);
 
+    boolean existsById(UUID id);
+
     @Query("""
             select p from PatientProfile p
             where (:status is null or p.profileStatus = :status)
+              and (:name is null or :name = ''
+                   or lower(p.firstName) like lower(concat('%', :name, '%'))
+                   or lower(p.lastName) like lower(concat('%', :name, '%')))
+              and (:email is null or :email = '' or lower(p.email) like lower(concat('%', :email, '%')))
               and (:query is null or :query = ''
                    or lower(p.firstName) like lower(concat('%', :query, '%'))
                    or lower(p.lastName) like lower(concat('%', :query, '%'))
@@ -26,5 +32,5 @@ public interface PatientProfileRepository extends JpaRepository<PatientProfile, 
                    or lower(p.phone) like lower(concat('%', :query, '%'))
                    or lower(p.nationalId) like lower(concat('%', :query, '%')))
             """)
-    Page<PatientProfile> search(String query, ProfileStatus status, Pageable pageable);
+    Page<PatientProfile> search(String query, ProfileStatus status, String name, String email, Pageable pageable);
 }

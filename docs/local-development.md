@@ -151,6 +151,58 @@ IntelliJ run configuration-da ayrica yazmaq istesen:
 SPRING_PROFILES_ACTIVE=local
 ```
 
+## Config Server Runtime Config
+
+`config-server` native mode ile qalxir ve classpath daxilindeki
+`infrastructure/config-server/src/main/resources/config/` qovlugundan
+runtime config paylayir. IAM/Auth Service hazirda oz lokal config-i ile
+qalir; downstream biznes servisleri Config Server-den config oxuyur.
+
+Config Server-den oxunan servis config fayllari:
+
+- `user-profile-service.yml`
+- `policy-service.yml`
+- `claim-service.yml`
+- `payment-service.yml`
+- `health-record-service.yml`
+- `ai-risk-service.yml`
+- `fraud-detection-service.yml`
+- `notification-service.yml`
+
+Bu fayllarda port, datasource, Liquibase changelog, actuator exposure,
+correlation id logging pattern, Eureka URL, lazim olan Kafka/Redis/MinIO/AI
+parametrleri ve internal service secret saxlanilir. Servislerin oz
+`application.yml` fayllarinda yalniz minimal self-config qalir:
+application name, `optional:configserver` import, `local` profile fallback
+ve basic actuator config.
+
+Docker runtime-da compose her downstream service-e bu endpoint-i verir:
+
+```text
+CONFIG_SERVER_URL=http://config-server:8888
+```
+
+Host-dan servisi IntelliJ ile ise salanda default fallback budur:
+
+```text
+CONFIG_SERVER_URL=http://localhost:8888
+```
+
+Local runtime ardicilligi:
+
+```powershell
+.\gradlew.bat clean build
+.\gradlew.bat bootJar
+docker compose up -d --build
+docker compose ps
+```
+
+Compose faylinin sintaksisini yoxlamaq ucun:
+
+```powershell
+docker compose config --quiet
+```
+
 ## Local Service Ports
 
 | Service | Port |

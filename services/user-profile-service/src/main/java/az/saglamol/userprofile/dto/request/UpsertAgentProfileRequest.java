@@ -5,8 +5,12 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import az.saglamol.userprofile.entity.ProfileStatus;
+import jakarta.validation.constraints.NotNull;
+
+import java.util.UUID;
 
 public record UpsertAgentProfileRequest(
+        @NotNull UUID insuranceCompanyId,
         @NotBlank @Size(max = 120) String firstName,
         @NotBlank @Size(max = 120) String lastName,
         @NotBlank @Size(max = 120) String employeeCode,

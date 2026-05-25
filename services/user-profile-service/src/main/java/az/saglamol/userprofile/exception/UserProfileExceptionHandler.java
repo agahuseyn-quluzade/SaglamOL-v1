@@ -17,9 +17,11 @@ public class UserProfileExceptionHandler {
     ResponseEntity<ErrorResponse> handleUserProfileException(UserProfileException exception, HttpServletRequest request) {
         HttpStatus status = switch (exception.getErrorCode()) {
             case "HOSPITAL_NOT_FOUND", "DOCTOR_NOT_FOUND", "BRANCH_NOT_FOUND",
-                 "PATIENT_PROFILE_NOT_FOUND", "DOCTOR_PROFILE_NOT_FOUND", "AGENT_PROFILE_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+                 "PATIENT_PROFILE_NOT_FOUND", "DOCTOR_PROFILE_NOT_FOUND", "AGENT_PROFILE_NOT_FOUND",
+                 "INSURANCE_COMPANY_NOT_FOUND", "INSURANCE_STAFF_NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "HOSPITAL_ALREADY_EXISTS", "STAFF_ALREADY_EXISTS", "DOCTOR_ALREADY_ASSIGNED",
-                 "PROFILE_ALREADY_EXISTS" -> HttpStatus.CONFLICT;
+                 "PROFILE_ALREADY_EXISTS", "INSURANCE_COMPANY_ALREADY_EXISTS", "INSURANCE_STAFF_ALREADY_EXISTS",
+                 "AGENT_ALREADY_LINKED" -> HttpStatus.CONFLICT;
             case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };

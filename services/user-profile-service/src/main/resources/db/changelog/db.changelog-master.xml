@@ -223,4 +223,118 @@
             </sql>
         </rollback>
     </changeSet>
+
+    <changeSet id="005-add-insurance-company-model" author="codex">
+        <sql>
+            CREATE TABLE IF NOT EXISTS insurance_companies (
+                id UUID PRIMARY KEY,
+                name VARCHAR(200) NOT NULL,
+                tax_id VARCHAR(80) NOT NULL,
+                license_number VARCHAR(120) NOT NULL,
+                email VARCHAR(320),
+                phone VARCHAR(32),
+                address_country VARCHAR(120),
+                address_city VARCHAR(120),
+                address_district VARCHAR(120),
+                address_street VARCHAR(255),
+                address_postal_code VARCHAR(32),
+                status VARCHAR(30) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL,
+                CONSTRAINT uk_insurance_companies_tax_id UNIQUE (tax_id),
+                CONSTRAINT uk_insurance_companies_license_number UNIQUE (license_number)
+            );
+
+            CREATE TABLE IF NOT EXISTS insurance_company_staff_profiles (
+                id UUID PRIMARY KEY,
+                iam_user_id UUID NOT NULL,
+                insurance_company_id UUID NOT NULL,
+                role_type VARCHAR(40) NOT NULL,
+                position VARCHAR(120),
+                employee_code VARCHAR(120),
+                status VARCHAR(30) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL,
+                CONSTRAINT fk_insurance_staff_company FOREIGN KEY (insurance_company_id) REFERENCES insurance_companies(id),
+                CONSTRAINT uk_insurance_staff_user_company UNIQUE (iam_user_id, insurance_company_id),
+                CONSTRAINT uk_insurance_staff_company_employee UNIQUE (insurance_company_id, employee_code)
+            );
+
+            ALTER TABLE agent_profile
+                ADD COLUMN IF NOT EXISTS insurance_company_id UUID;
+
+            ALTER TABLE agent_profile
+                ALTER COLUMN insurance_company_id SET NOT NULL;
+
+            ALTER TABLE agent_profile
+                ADD CONSTRAINT fk_agent_profile_insurance_company
+                FOREIGN KEY (insurance_company_id) REFERENCES insurance_companies(id);
+
+            CREATE INDEX IF NOT EXISTS idx_insurance_companies_status ON insurance_companies(status);
+            CREATE INDEX IF NOT EXISTS idx_insurance_company_staff_company
+                ON insurance_company_staff_profiles(insurance_company_id);
+            CREATE INDEX IF NOT EXISTS idx_insurance_company_staff_iam_user
+                ON insurance_company_staff_profiles(iam_user_id);
+            CREATE INDEX IF NOT EXISTS idx_agent_profile_insurance_company
+                ON agent_profile(insurance_company_id);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX IF EXISTS idx_agent_profile_insurance_company;
+                DROP INDEX IF EXISTS idx_insurance_company_staff_iam_user;
+                DROP INDEX IF EXISTS idx_insurance_company_staff_company;
+                DROP INDEX IF EXISTS idx_insurance_companies_status;
+
+                ALTER TABLE agent_profile
+                    DROP CONSTRAINT IF EXISTS fk_agent_profile_insurance_company;
+                ALTER TABLE agent_profile
+                    DROP COLUMN IF EXISTS insurance_company_id;
+
+                DROP TABLE IF EXISTS insurance_company_staff_profiles;
+                DROP TABLE IF EXISTS insurance_companies;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="006-add-insurance-ownership-indexes" author="codex">
+        <sql>
+            CREATE INDEX IF NOT EXISTS idx_insurance_staff_iam_user_company
+                ON insurance_company_staff_profiles(iam_user_id, insurance_company_id);
+            CREATE INDEX IF NOT EXISTS idx_agent_profile_user_company
+                ON agent_profile(user_id, insurance_company_id);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX IF EXISTS idx_agent_profile_user_company;
+                DROP INDEX IF EXISTS idx_insurance_staff_iam_user_company;
+            </sql>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="007-final-user-profile-hardening-indexes" author="codex">
+        <sql>
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_agent_profile_company_employee
+                ON agent_profile(insurance_company_id, employee_no);
+            CREATE INDEX IF NOT EXISTS idx_patient_profile_search
+                ON patient_profile(profile_status, first_name, last_name, email);
+            CREATE INDEX IF NOT EXISTS idx_doctor_profile_search
+                ON doctor_profile(profile_status, first_name, last_name, email, specialty);
+            CREATE INDEX IF NOT EXISTS idx_agent_profile_search
+                ON agent_profile(insurance_company_id, profile_status, first_name, last_name, email);
+            CREATE INDEX IF NOT EXISTS idx_hospital_search
+                ON hospital(status, name, email);
+            CREATE INDEX IF NOT EXISTS idx_hospital_branch_city
+                ON hospital_branch(city);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX IF EXISTS idx_hospital_branch_city;
+                DROP INDEX IF EXISTS idx_hospital_search;
+                DROP INDEX IF EXISTS idx_agent_profile_search;
+                DROP INDEX IF EXISTS idx_doctor_profile_search;
+                DROP INDEX IF EXISTS idx_patient_profile_search;
+                DROP INDEX IF EXISTS uk_agent_profile_company_employee;
+            </sql>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>

@@ -4,6 +4,7 @@ import az.saglamol.userprofile.dto.request.AssignDoctorToHospitalRequest;
 import az.saglamol.userprofile.dto.request.CreateHospitalBranchRequest;
 import az.saglamol.userprofile.dto.request.CreateHospitalRequest;
 import az.saglamol.userprofile.dto.request.CreateHospitalStaffRequest;
+import az.saglamol.userprofile.dto.request.UpdateHospitalRequest;
 import az.saglamol.userprofile.dto.response.DoctorHospitalAssignmentResponse;
 import az.saglamol.userprofile.dto.response.HospitalBranchResponse;
 import az.saglamol.userprofile.dto.response.HospitalResponse;
@@ -22,6 +23,8 @@ import az.saglamol.userprofile.repository.HospitalStaffProfileRepository;
 import az.saglamol.userprofile.security.ProviderAccessService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Instant;
 import java.util.List;
@@ -84,9 +87,40 @@ public class HospitalService {
     }
 
     @Transactional(readOnly = true)
+    public Page<HospitalResponse> searchHospitals(HospitalStatus status, String name, String email, String city, Pageable pageable) {
+        var scope = providerAccessService.readableHospitalScope();
+        Page<Hospital> page = hospitalRepository.search(status, name, email, city, pageable);
+        if (scope.isEmpty()) {
+            return page.map(this::toResponse);
+        }
+        var allowed = scope.get();
+        var filtered = page.getContent().stream()
+                .filter(hospital -> allowed.contains(hospital.getId()))
+                .map(this::toResponse)
+                .toList();
+        return new org.springframework.data.domain.PageImpl<>(filtered, pageable, filtered.size());
+    }
+
+    @Transactional(readOnly = true)
     public HospitalResponse hospital(UUID hospitalId) {
         Hospital hospital = findHospital(hospitalId);
         providerAccessService.requireHospitalRead(hospitalId);
+        return toResponse(hospital);
+    }
+
+    @Transactional
+    public HospitalResponse updateHospital(UUID hospitalId, UpdateHospitalRequest request) {
+        Hospital hospital = findHospital(hospitalId);
+        providerAccessService.requireHospitalWrite(hospitalId);
+        hospital.update(request.name(), request.phone(), request.email());
+        return toResponse(hospital);
+    }
+
+    @Transactional
+    public HospitalResponse changeStatus(UUID hospitalId, HospitalStatus status) {
+        Hospital hospital = findHospital(hospitalId);
+        providerAccessService.requireHospitalWrite(hospitalId);
+        hospital.changeStatus(status);
         return toResponse(hospital);
     }
 

@@ -54,6 +54,16 @@ public class Hospital {
         this.createdAt = createdAt;
     }
 
+    public void update(String name, String phone, String email) {
+        this.name = name;
+        this.phone = phone;
+        this.email = email;
+    }
+
+    public void changeStatus(HospitalStatus status) {
+        this.status = status;
+    }
+
     public UUID getId() {
         return id;
     }

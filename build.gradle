@@ -73,3 +73,18 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
         implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
     }
 }
+
+configure([
+        project(':services:user-profile-service'),
+        project(':services:policy-service'),
+        project(':services:claim-service'),
+        project(':services:payment-service'),
+        project(':services:health-record-service'),
+        project(':services:ai-risk-service'),
+        project(':services:fraud-detection-service'),
+        project(':services:notification-service')
+]) {
+    dependencies {
+        implementation 'org.springframework.cloud:spring-cloud-starter-config'
+    }
+}

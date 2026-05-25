@@ -58,4 +58,112 @@
             );
         </sql>
     </changeSet>
+
+    <changeSet id="002-migrate-policy-schema-to-products" author="codex">
+        <sql>
+            ALTER TABLE IF EXISTS insurance_plan RENAME TO insurance_products;
+            ALTER TABLE IF EXISTS coverage_rule RENAME TO coverage_rules;
+            ALTER TABLE IF EXISTS policy RENAME TO policies;
+            ALTER TABLE IF EXISTS policy_limit_reservation RENAME TO policy_limit_reservations;
+
+            ALTER TABLE insurance_products RENAME COLUMN code TO product_code;
+            ALTER TABLE insurance_products RENAME COLUMN monthly_price TO premium_amount;
+            ALTER TABLE insurance_products DROP CONSTRAINT IF EXISTS insurance_plan_code_key;
+            ALTER TABLE insurance_products DROP CONSTRAINT IF EXISTS insurance_products_code_key;
+            ALTER TABLE insurance_products DROP CONSTRAINT IF EXISTS CONSTRAINT_E1;
+            ALTER TABLE insurance_products ADD COLUMN IF NOT EXISTS insurance_company_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000';
+            ALTER TABLE insurance_products ADD COLUMN IF NOT EXISTS description VARCHAR(1000);
+            ALTER TABLE insurance_products ADD COLUMN IF NOT EXISTS coverage_type VARCHAR(40) NOT NULL DEFAULT 'BASIC';
+            ALTER TABLE insurance_products ADD COLUMN IF NOT EXISTS annual_limit DECIMAL(14,2) NOT NULL DEFAULT 0;
+            ALTER TABLE insurance_products ADD COLUMN IF NOT EXISTS currency VARCHAR(3) NOT NULL DEFAULT 'AZN';
+            ALTER TABLE insurance_products ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+            ALTER TABLE coverage_rules RENAME COLUMN plan_id TO product_id;
+            ALTER TABLE coverage_rules RENAME COLUMN annual_limit TO max_amount;
+            ALTER TABLE coverage_rules ADD COLUMN IF NOT EXISTS requires_pre_approval BOOLEAN NOT NULL DEFAULT FALSE;
+            ALTER TABLE coverage_rules ADD COLUMN IF NOT EXISTS status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE';
+            ALTER TABLE coverage_rules ADD COLUMN IF NOT EXISTS created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+            ALTER TABLE coverage_rules ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+
+            ALTER TABLE policies RENAME COLUMN patient_id TO patient_profile_id;
+            ALTER TABLE policies RENAME COLUMN plan_id TO product_id;
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS policy_number VARCHAR(80);
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS insurance_company_id UUID NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000';
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS agent_profile_id UUID;
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS premium_amount DECIMAL(14,2) NOT NULL DEFAULT 0;
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS annual_limit DECIMAL(14,2) NOT NULL DEFAULT 0;
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS used_limit DECIMAL(14,2) NOT NULL DEFAULT 0;
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS reserved_limit DECIMAL(14,2) NOT NULL DEFAULT 0;
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP;
+            ALTER TABLE policies ADD COLUMN IF NOT EXISTS version BIGINT NOT NULL DEFAULT 0;
+            UPDATE policies SET policy_number = 'POL-' || id WHERE policy_number IS NULL;
+            ALTER TABLE policies ALTER COLUMN policy_number SET NOT NULL;
+
+            ALTER TABLE policy_limit_reservations RENAME TO policy_limit_reservations_legacy;
+            CREATE TABLE policy_limit_reservations (
+                id UUID PRIMARY KEY,
+                policy_id UUID NOT NULL REFERENCES policies(id),
+                insurance_company_id UUID NOT NULL,
+                claim_id UUID NOT NULL,
+                reserved_amount DECIMAL(14,2) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
+            );
+            INSERT INTO policy_limit_reservations (
+                id, policy_id, insurance_company_id, claim_id, reserved_amount, status, created_at, updated_at
+            )
+            SELECT id, policy_id, '00000000-0000-0000-0000-000000000000', claim_id, reserved_amount, status, created_at, updated_at
+            FROM policy_limit_reservations_legacy;
+            DROP TABLE policy_limit_reservations_legacy;
+
+            CREATE TABLE IF NOT EXISTS provider_contracts (
+                id UUID PRIMARY KEY,
+                insurance_company_id UUID NOT NULL,
+                hospital_id UUID NOT NULL,
+                product_id UUID NULL,
+                contract_number VARCHAR(80) NOT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                payout_model VARCHAR(40) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_insurance_products_company ON insurance_products(insurance_company_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_insurance_products_company_code
+                ON insurance_products(insurance_company_id, product_code);
+            CREATE INDEX IF NOT EXISTS idx_coverage_rules_product ON coverage_rules(product_id);
+            CREATE INDEX IF NOT EXISTS idx_policies_company ON policies(insurance_company_id);
+            CREATE INDEX IF NOT EXISTS idx_policies_product ON policies(product_id);
+            CREATE INDEX IF NOT EXISTS idx_policies_patient ON policies(patient_profile_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_policies_policy_number ON policies(policy_number);
+            CREATE INDEX IF NOT EXISTS idx_provider_contracts_company ON provider_contracts(insurance_company_id);
+            CREATE INDEX IF NOT EXISTS idx_provider_contracts_hospital ON provider_contracts(hospital_id);
+            CREATE UNIQUE INDEX IF NOT EXISTS uk_provider_contracts_company_number
+                ON provider_contracts(insurance_company_id, contract_number);
+            CREATE INDEX IF NOT EXISTS idx_policy_limit_reservations_company
+                ON policy_limit_reservations(insurance_company_id);
+            CREATE INDEX IF NOT EXISTS idx_policy_limit_reservations_policy
+                ON policy_limit_reservations(policy_id);
+        </sql>
+        <rollback>
+            <sql>
+                DROP INDEX IF EXISTS idx_policy_limit_reservations_policy;
+                DROP INDEX IF EXISTS idx_policy_limit_reservations_company;
+                DROP INDEX IF EXISTS uk_provider_contracts_company_number;
+                DROP INDEX IF EXISTS idx_provider_contracts_hospital;
+                DROP INDEX IF EXISTS idx_provider_contracts_company;
+                DROP INDEX IF EXISTS uk_policies_policy_number;
+                DROP INDEX IF EXISTS idx_policies_patient;
+                DROP INDEX IF EXISTS idx_policies_product;
+                DROP INDEX IF EXISTS idx_policies_company;
+                DROP INDEX IF EXISTS idx_coverage_rules_product;
+                DROP INDEX IF EXISTS uk_insurance_products_company_code;
+                DROP INDEX IF EXISTS idx_insurance_products_company;
+                DROP TABLE IF EXISTS provider_contracts;
+            </sql>
+        </rollback>
+    </changeSet>
 </databaseChangeLog>
