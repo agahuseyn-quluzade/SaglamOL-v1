@@ -41,8 +41,7 @@ public class PasswordService {
             UserAccountRepository userAccountRepository,
             PasswordResetTokenRepository passwordResetTokenRepository,
             PasswordEncoder passwordEncoder,
-            RefreshTokenService refreshTokenService
-    ) {
+            RefreshTokenService refreshTokenService) {
         this.userAccountRepository = userAccountRepository;
         this.passwordResetTokenRepository = passwordResetTokenRepository;
         this.passwordEncoder = passwordEncoder;
@@ -71,9 +70,8 @@ public class PasswordService {
                     user,
                     hash(rawToken),
                     now,
-                    now.plusSeconds(900)
-            ));
-            LOGGER.info("Mock password reset token issued for userId={} token={}", user.getId(), rawToken);
+                    now.plusSeconds(900)));
+            LOGGER.info("Mock password reset token issued for userId={}", user.getId());
         });
         return new PasswordResetRequestedResponse("RESET_REQUESTED", "If the account exists, a reset token was issued");
     }
