@@ -48,6 +48,18 @@ public class PolicyAccessService {
         throw forbidden("Insurance company management permission is required");
     }
 
+    public void requireCanOperateForCompany(AuthContext authContext, UUID companyId) {
+        if (isAdmin(authContext)) {
+            return;
+        }
+        InsuranceScopeResponse scope = insuranceScope(authContext);
+        if (scope != null && scope.canView() && companyId.equals(scope.insuranceCompanyId())
+                && (scope.canManage() || scope.isAgent())) {
+            return;
+        }
+        throw forbidden("Insurance company operation permission is required");
+    }
+
     public void requireCanViewCompany(AuthContext authContext, UUID companyId) {
         if (isAdmin(authContext)) {
             return;
@@ -113,6 +125,29 @@ public class PolicyAccessService {
 
     public void requireCanManageContract(AuthContext authContext, ProviderContract contract) {
         requireCanManageCompany(authContext, contract.getInsuranceCompanyId());
+    }
+
+    public boolean canViewPolicy(AuthContext authContext, UUID companyId, UUID patientProfileId) {
+        if (isAdmin(authContext)) {
+            return true;
+        }
+        if (authContext.hasRole(RoleConstants.PATIENT)) {
+            UserProfileSummaryResponse summary = profileScopeClient.userSummary(authContext.userId());
+            return summary != null && patientProfileId.equals(summary.patientProfileId());
+        }
+        InsuranceScopeResponse scope = insuranceScope(authContext);
+        return scope != null && scope.canView() && companyId.equals(scope.insuranceCompanyId());
+    }
+
+    public void requireCanViewPolicy(AuthContext authContext, UUID companyId, UUID patientProfileId) {
+        if (!canViewPolicy(authContext, companyId, patientProfileId)) {
+            throw forbidden("Policy access is forbidden");
+        }
+    }
+
+    public UUID currentPatientProfileId(AuthContext authContext) {
+        UserProfileSummaryResponse summary = profileScopeClient.userSummary(authContext.userId());
+        return summary == null ? null : summary.patientProfileId();
     }
 
     private InsuranceScopeResponse insuranceScope(AuthContext authContext) {

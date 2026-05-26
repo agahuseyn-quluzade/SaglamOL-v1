@@ -2,6 +2,7 @@ package az.saglamol.policy.client;
 
 import az.saglamol.policy.client.dto.InsuranceScopeResponse;
 import az.saglamol.policy.client.dto.UserProfileSummaryResponse;
+import az.saglamol.policy.dto.response.AgentCompanyResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
@@ -41,5 +42,24 @@ public class RestProfileScopeClient implements ProfileScopeClient {
                 .header(INTERNAL_SECRET_HEADER, internalSecret)
                 .retrieve()
                 .body(UserProfileSummaryResponse.class);
+    }
+
+    @Override
+    public boolean patientExists(UUID patientProfileId) {
+        Boolean exists = restClient.get()
+                .uri("/internal/v1/profiles/patients/{patientProfileId}/exists", patientProfileId)
+                .header(INTERNAL_SECRET_HEADER, internalSecret)
+                .retrieve()
+                .body(Boolean.class);
+        return Boolean.TRUE.equals(exists);
+    }
+
+    @Override
+    public AgentCompanyResponse agentCompany(UUID agentProfileId) {
+        return restClient.get()
+                .uri("/internal/v1/agents/{agentProfileId}/insurance-company", agentProfileId)
+                .header(INTERNAL_SECRET_HEADER, internalSecret)
+                .retrieve()
+                .body(AgentCompanyResponse.class);
     }
 }

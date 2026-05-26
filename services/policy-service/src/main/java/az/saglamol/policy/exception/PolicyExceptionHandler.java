@@ -16,8 +16,10 @@ public class PolicyExceptionHandler {
     @ExceptionHandler(PolicyException.class)
     ResponseEntity<ErrorResponse> handlePolicyException(PolicyException exception, HttpServletRequest request) {
         HttpStatus status = switch (exception.getErrorCode()) {
-            case "PRODUCT_NOT_FOUND", "COVERAGE_RULE_NOT_FOUND", "PROVIDER_CONTRACT_NOT_FOUND" -> HttpStatus.NOT_FOUND;
-            case "PRODUCT_ALREADY_EXISTS", "COVERAGE_RULE_ALREADY_EXISTS", "PROVIDER_CONTRACT_ALREADY_EXISTS" -> HttpStatus.CONFLICT;
+            case "PRODUCT_NOT_FOUND", "COVERAGE_RULE_NOT_FOUND", "PROVIDER_CONTRACT_NOT_FOUND",
+                 "POLICY_NOT_FOUND", "PATIENT_PROFILE_NOT_FOUND", "LIMIT_RESERVATION_NOT_FOUND" -> HttpStatus.NOT_FOUND;
+            case "PRODUCT_ALREADY_EXISTS", "COVERAGE_RULE_ALREADY_EXISTS", "PROVIDER_CONTRACT_ALREADY_EXISTS",
+                 "LIMIT_ALREADY_RESERVED" -> HttpStatus.CONFLICT;
             case "FORBIDDEN" -> HttpStatus.FORBIDDEN;
             default -> HttpStatus.BAD_REQUEST;
         };

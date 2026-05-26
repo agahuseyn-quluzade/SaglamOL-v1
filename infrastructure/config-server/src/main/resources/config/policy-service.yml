@@ -41,6 +41,14 @@ saglamol:
     internal-auth:
       enabled: true
       secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
+      public-path-prefixes: /actuator,/v3/api-docs,/swagger-ui,/internal/v1
   clients:
     user-profile:
       base-url: ${USER_PROFILE_SERVICE_URL:http://localhost:8082}
+
+outbox:
+  topic: policy.events
+  scheduler:
+    enabled: ${OUTBOX_SCHEDULER_ENABLED:true}
+    interval: ${OUTBOX_SCHEDULER_INTERVAL:5000}
+  maxRetries: ${OUTBOX_MAX_RETRIES:5}

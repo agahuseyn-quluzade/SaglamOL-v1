@@ -15,6 +15,12 @@ public interface ProviderContractRepository extends JpaRepository<ProviderContra
 
     List<ProviderContract> findByInsuranceCompanyIdAndStatus(UUID insuranceCompanyId, ProviderContractStatus status);
 
+    List<ProviderContract> findByInsuranceCompanyIdAndHospitalIdAndStatus(
+            UUID insuranceCompanyId,
+            UUID hospitalId,
+            ProviderContractStatus status
+    );
+
     Optional<ProviderContract> findByInsuranceCompanyIdAndContractNumber(UUID insuranceCompanyId, String contractNumber);
 
     boolean existsByInsuranceCompanyIdAndContractNumber(UUID insuranceCompanyId, String contractNumber);

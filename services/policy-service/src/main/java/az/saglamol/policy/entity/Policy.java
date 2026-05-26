@@ -93,6 +93,41 @@ public class Policy {
         return id;
     }
 
+    public void activate(Instant updatedAt) {
+        this.status = PolicyStatus.ACTIVE;
+        this.updatedAt = updatedAt;
+    }
+
+    public void cancel(Instant updatedAt) {
+        this.status = PolicyStatus.CANCELLED;
+        this.updatedAt = updatedAt;
+    }
+
+    public void suspend(Instant updatedAt) {
+        this.status = PolicyStatus.SUSPENDED;
+        this.updatedAt = updatedAt;
+    }
+
+    public void reserveLimit(BigDecimal amount, Instant updatedAt) {
+        this.reservedLimit = this.reservedLimit.add(amount);
+        this.updatedAt = updatedAt;
+    }
+
+    public void commitReservedLimit(BigDecimal amount, Instant updatedAt) {
+        this.reservedLimit = this.reservedLimit.subtract(amount);
+        this.usedLimit = this.usedLimit.add(amount);
+        this.updatedAt = updatedAt;
+    }
+
+    public void releaseReservedLimit(BigDecimal amount, Instant updatedAt) {
+        this.reservedLimit = this.reservedLimit.subtract(amount);
+        this.updatedAt = updatedAt;
+    }
+
+    public BigDecimal availableLimit() {
+        return annualLimit.subtract(usedLimit).subtract(reservedLimit);
+    }
+
     public String getPolicyNumber() {
         return policyNumber;
     }

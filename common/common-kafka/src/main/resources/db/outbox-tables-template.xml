@@ -19,7 +19,7 @@
             <column name="event_type" type="varchar(150)">
                 <constraints nullable="false"/>
             </column>
-            <column name="payload" type="text">
+            <column name="payload" type="varchar(10485760)">
                 <constraints nullable="false"/>
             </column>
             <column name="status" type="varchar(30)" defaultValue="PENDING">

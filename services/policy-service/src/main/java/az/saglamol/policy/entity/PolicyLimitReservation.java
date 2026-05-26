@@ -59,6 +59,16 @@ public class PolicyLimitReservation {
         return id;
     }
 
+    public void commit(Instant updatedAt) {
+        this.status = ReservationStatus.COMMITTED;
+        this.updatedAt = updatedAt;
+    }
+
+    public void release(Instant updatedAt) {
+        this.status = ReservationStatus.RELEASED;
+        this.updatedAt = updatedAt;
+    }
+
     public UUID getPolicyId() {
         return policyId;
     }

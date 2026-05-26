@@ -13,4 +13,5 @@ dependencies {
     implementation project(':common:common-exception')
     implementation project(':common:common-security')
     implementation project(':common:common-events')
+    implementation project(':common:common-kafka')
 }
