@@ -30,4 +30,138 @@
             );
         </sql>
     </changeSet>
+
+    <changeSet id="002-create-payment-runtime-tables" author="codex">
+        <createTable tableName="payments">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="payment_number" type="varchar(80)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_payments_payment_number"/>
+            </column>
+            <column name="policy_id" type="uuid"/>
+            <column name="insurance_company_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="patient_profile_id" type="uuid"/>
+            <column name="claim_id" type="uuid"/>
+            <column name="hospital_id" type="uuid"/>
+            <column name="amount" type="decimal(14,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="varchar(3)" defaultValue="AZN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="payment_type" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_reference" type="varchar(160)"/>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="payment_transactions">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="payment_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="transaction_type" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="decimal(14,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="provider_response" type="varchar(2000)"/>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <createTable tableName="invoices">
+            <column name="id" type="uuid">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="invoice_number" type="varchar(80)">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_invoices_invoice_number"/>
+            </column>
+            <column name="policy_id" type="uuid"/>
+            <column name="claim_id" type="uuid"/>
+            <column name="insurance_company_id" type="uuid">
+                <constraints nullable="false"/>
+            </column>
+            <column name="hospital_id" type="uuid"/>
+            <column name="patient_profile_id" type="uuid"/>
+            <column name="amount" type="decimal(14,2)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="currency" type="varchar(3)" defaultValue="AZN">
+                <constraints nullable="false"/>
+            </column>
+            <column name="status" type="varchar(40)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="issued_at" type="timestamp"/>
+            <column name="paid_at" type="timestamp"/>
+            <column name="created_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="timestamp">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+
+        <addForeignKeyConstraint baseTableName="payment_transactions"
+                                 baseColumnNames="payment_id"
+                                 constraintName="fk_payment_transactions_payment"
+                                 referencedTableName="payments"
+                                 referencedColumnNames="id"/>
+
+        <createIndex tableName="payments" indexName="idx_payments_policy_id">
+            <column name="policy_id"/>
+        </createIndex>
+        <createIndex tableName="payments" indexName="idx_payments_claim_id">
+            <column name="claim_id"/>
+        </createIndex>
+        <createIndex tableName="payments" indexName="idx_payments_company_id">
+            <column name="insurance_company_id"/>
+        </createIndex>
+        <createIndex tableName="payments" indexName="idx_payments_hospital_id">
+            <column name="hospital_id"/>
+        </createIndex>
+        <createIndex tableName="payments" indexName="idx_payments_patient_profile_id">
+            <column name="patient_profile_id"/>
+        </createIndex>
+        <createIndex tableName="payment_transactions" indexName="idx_payment_transactions_payment_id">
+            <column name="payment_id"/>
+        </createIndex>
+        <createIndex tableName="invoices" indexName="idx_invoices_company_id">
+            <column name="insurance_company_id"/>
+        </createIndex>
+        <createIndex tableName="invoices" indexName="idx_invoices_hospital_id">
+            <column name="hospital_id"/>
+        </createIndex>
+        <createIndex tableName="invoices" indexName="idx_invoices_policy_id">
+            <column name="policy_id"/>
+        </createIndex>
+        <createIndex tableName="invoices" indexName="idx_invoices_claim_id">
+            <column name="claim_id"/>
+        </createIndex>
+    </changeSet>
+
+    <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

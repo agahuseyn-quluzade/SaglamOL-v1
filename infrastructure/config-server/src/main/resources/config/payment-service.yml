@@ -17,6 +17,10 @@ spring:
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
+payment:
+  mock:
+    failure-rate: ${PAYMENT_MOCK_FAILURE_RATE:0.0}
+
 eureka:
   client:
     service-url:
@@ -37,3 +41,16 @@ saglamol:
     internal-auth:
       enabled: true
       secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
+      public-path-prefixes: /actuator,/v3/api-docs,/swagger-ui
+  clients:
+    policy:
+      base-url: ${POLICY_SERVICE_URL:http://localhost:8084}
+    user-profile:
+      base-url: ${USER_PROFILE_SERVICE_URL:http://localhost:8082}
+
+outbox:
+  topic: payment.events
+  maxRetries: ${OUTBOX_MAX_RETRIES:5}
+  scheduler:
+    enabled: ${OUTBOX_SCHEDULER_ENABLED:true}
+    interval: ${OUTBOX_SCHEDULER_INTERVAL:5000}
