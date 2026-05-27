@@ -5,6 +5,7 @@ import az.saglamol.common.events.payment.ClaimPayoutFailedEvent;
 import az.saglamol.common.events.payment.PaymentCompletedEvent;
 import az.saglamol.common.events.payment.PaymentFailedEvent;
 import az.saglamol.common.events.payment.RefundCompletedEvent;
+import az.saglamol.common.events.claim.ClaimApprovedEvent;
 import az.saglamol.common.kafka.outbox.OutboxEventService;
 import az.saglamol.common.security.AuthContext;
 import az.saglamol.payment.client.PolicyInternalClient;
@@ -92,6 +93,25 @@ public class PaymentService {
     @Transactional
     public PaymentResponse createClaimPayout(AuthContext authContext, CreateClaimPayoutRequest request) {
         accessService.requireCanCreatePayout(authContext, request.insuranceCompanyId(), request.hospitalId());
+        return createClaimPayoutInternal(request);
+    }
+
+    @Transactional
+    public PaymentResponse createClaimPayoutFromApprovedClaim(ClaimApprovedEvent event) {
+        if (!paymentRepository.findByClaimId(event.claimId()).isEmpty()) {
+            return mapper.toResponse(paymentRepository.findByClaimId(event.claimId()).get(0));
+        }
+        return createClaimPayoutInternal(new CreateClaimPayoutRequest(
+                event.claimId(),
+                event.companyId(),
+                event.patientProfileId(),
+                null,
+                event.approvedAmount(),
+                "AZN"
+        ));
+    }
+
+    private PaymentResponse createClaimPayoutInternal(CreateClaimPayoutRequest request) {
         Instant now = Instant.now();
         Payment payment = new Payment(
                 UUID.randomUUID(),

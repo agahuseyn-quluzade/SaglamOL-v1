@@ -4,55 +4,109 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet id="001-create-health-record-tables" author="codex">
+    <changeSet id="001-create-health-record-core-tables" author="codex">
         <sql>
-            CREATE TABLE health_record (
+            CREATE TABLE health_records (
                 id UUID PRIMARY KEY,
-                patient_id UUID NOT NULL,
-                doctor_id UUID NOT NULL,
-                diagnosis_code VARCHAR(80) NOT NULL,
-                treatment_date DATE NOT NULL,
-                created_at TIMESTAMP NOT NULL
+                patient_profile_id UUID NOT NULL,
+                doctor_profile_id UUID NULL,
+                hospital_id UUID NULL,
+                branch_id UUID NULL,
+                claim_id UUID NULL,
+                visit_date DATE NOT NULL,
+                visit_type VARCHAR(30) NOT NULL,
+                record_type VARCHAR(40) NOT NULL,
+                diagnosis TEXT NULL,
+                notes TEXT NULL,
+                status VARCHAR(30) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
             );
 
-            CREATE TABLE treatment (
+            CREATE TABLE treatments (
                 id UUID PRIMARY KEY,
-                health_record_id UUID NOT NULL REFERENCES health_record(id),
+                health_record_id UUID NOT NULL REFERENCES health_records(id),
                 service_type VARCHAR(80) NOT NULL,
-                description TEXT NULL
+                treatment_type VARCHAR(80) NOT NULL,
+                description TEXT NULL,
+                start_date DATE NOT NULL,
+                end_date DATE NULL,
+                medications TEXT NULL,
+                estimated_cost DECIMAL(14,2) NULL,
+                actual_cost DECIMAL(14,2) NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
             );
 
-            CREATE TABLE medical_document (
+            CREATE TABLE medical_documents (
                 id UUID PRIMARY KEY,
-                health_record_id UUID NOT NULL REFERENCES health_record(id),
+                health_record_id UUID NULL REFERENCES health_records(id),
+                treatment_id UUID NULL REFERENCES treatments(id),
+                claim_id UUID NULL,
+                patient_profile_id UUID NOT NULL,
+                hospital_id UUID NULL,
+                uploaded_by_user_id UUID NOT NULL,
+                document_type VARCHAR(40) NOT NULL,
                 file_name VARCHAR(255) NOT NULL,
-                storage_path VARCHAR(500) NOT NULL,
+                file_size BIGINT NOT NULL,
+                content_type VARCHAR(120) NOT NULL,
+                storage_bucket VARCHAR(120) NOT NULL,
+                minio_key VARCHAR(500) NOT NULL,
                 sha256_hash CHAR(64) NULL,
-                file_size_bytes BIGINT NOT NULL,
-                mime_type VARCHAR(120) NOT NULL,
                 status VARCHAR(40) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE document_hash_index (
+                id UUID PRIMARY KEY,
+                sha256_hash CHAR(64) NOT NULL,
+                document_id UUID NOT NULL REFERENCES medical_documents(id),
+                patient_profile_id UUID NOT NULL,
+                claim_id UUID NULL,
+                hospital_id UUID NULL,
                 created_at TIMESTAMP NOT NULL
             );
 
             CREATE TABLE health_access_log (
                 id UUID PRIMARY KEY,
-                record_id UUID NOT NULL,
-                actor_id UUID NOT NULL,
-                action VARCHAR(80) NOT NULL,
-                created_at TIMESTAMP NOT NULL
+                health_record_id UUID NULL REFERENCES health_records(id),
+                document_id UUID NULL REFERENCES medical_documents(id),
+                accessed_by_user_id UUID NOT NULL,
+                access_role VARCHAR(80) NOT NULL,
+                reason TEXT NOT NULL,
+                accessed_at TIMESTAMP NOT NULL
             );
 
-            CREATE TABLE document_hash_index (
-                id UUID PRIMARY KEY,
-                document_id UUID NOT NULL,
-                sha256_hash CHAR(64) NOT NULL,
-                file_size_bytes BIGINT NOT NULL,
-                mime_type VARCHAR(120) NOT NULL,
-                invoice_number VARCHAR(120) NULL,
-                clinic_id UUID NULL,
-                patient_id UUID NULL,
-                first_seen_at TIMESTAMP NOT NULL
-            );
+            CREATE INDEX idx_health_records_patient_profile ON health_records(patient_profile_id);
+            CREATE INDEX idx_health_records_doctor_profile ON health_records(doctor_profile_id);
+            CREATE INDEX idx_health_records_hospital ON health_records(hospital_id);
+            CREATE INDEX idx_health_records_claim ON health_records(claim_id);
+            CREATE INDEX idx_health_records_visit_date ON health_records(visit_date);
+            CREATE INDEX idx_health_records_status ON health_records(status);
+
+            CREATE INDEX idx_treatments_health_record ON treatments(health_record_id);
+
+            CREATE INDEX idx_medical_documents_health_record ON medical_documents(health_record_id);
+            CREATE INDEX idx_medical_documents_treatment ON medical_documents(treatment_id);
+            CREATE INDEX idx_medical_documents_claim ON medical_documents(claim_id);
+            CREATE INDEX idx_medical_documents_patient_profile ON medical_documents(patient_profile_id);
+            CREATE INDEX idx_medical_documents_hospital ON medical_documents(hospital_id);
+            CREATE INDEX idx_medical_documents_status ON medical_documents(status);
+            CREATE INDEX idx_medical_documents_document_type ON medical_documents(document_type);
+            CREATE UNIQUE INDEX uk_medical_documents_sha256_hash ON medical_documents(sha256_hash);
+
+            CREATE UNIQUE INDEX uk_document_hash_index_sha256_hash ON document_hash_index(sha256_hash);
+            CREATE INDEX idx_document_hash_index_document ON document_hash_index(document_id);
+            CREATE INDEX idx_document_hash_index_patient_profile ON document_hash_index(patient_profile_id);
+            CREATE INDEX idx_document_hash_index_claim ON document_hash_index(claim_id);
+            CREATE INDEX idx_document_hash_index_hospital ON document_hash_index(hospital_id);
+
+            CREATE INDEX idx_health_access_log_health_record ON health_access_log(health_record_id);
+            CREATE INDEX idx_health_access_log_document ON health_access_log(document_id);
+            CREATE INDEX idx_health_access_log_accessed_by ON health_access_log(accessed_by_user_id);
         </sql>
     </changeSet>
+
+    <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

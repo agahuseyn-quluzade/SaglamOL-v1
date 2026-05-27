@@ -5,6 +5,34 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   config:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${AI_RISK_KAFKA_GROUP_ID:ai-risk-service-group}
+      auto-offset-reset: earliest
+      properties:
+        spring.json.trusted.packages: az.saglamol.common.events,az.saglamol.common.events.*
+        spring.json.value.default.type: az.saglamol.common.events.EventEnvelope
+        spring.json.use.type.headers: false
+
+ai-risk:
+  provider:
+    base-url: ${AI_PROVIDER_BASE_URL:${AI_BASE_URL:https://api.openai.com/v1}}
+    api-key: ${AI_API_KEY:}
+    model-name: ${AI_MODEL_NAME:${AI_MODEL:gpt-4o-mini}}
+    timeout-seconds: ${AI_TIMEOUT_SECONDS:10}
+    enabled: ${AI_ENABLED:true}
+    provider-name: ${AI_PROVIDER:external-ai}
+  feign:
+    connect-timeout-ms: ${AI_RISK_FEIGN_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-ms: ${AI_RISK_FEIGN_READ_TIMEOUT_MS:5000}
+
+outbox:
+  topic: ${AI_RISK_OUTBOX_TOPIC:risk.events}
+  max-retries: ${OUTBOX_MAX_RETRIES:5}
+  scheduler:
+    enabled: ${OUTBOX_SCHEDULER_ENABLED:true}
+    interval: ${OUTBOX_SCHEDULER_INTERVAL:5000}
 
 management:
   endpoints:

@@ -15,17 +15,65 @@ import java.util.UUID;
 public class DocumentHashIndex {
     @Id
     private UUID id;
-    private UUID documentId;
+
     @Column(name = "sha256_hash", length = 64, columnDefinition = "char(64)")
     @JdbcTypeCode(SqlTypes.CHAR)
     private String sha256Hash;
-    private Long fileSizeBytes;
-    private String mimeType;
-    private String invoiceNumber;
-    private UUID clinicId;
-    private UUID patientId;
-    private Instant firstSeenAt;
+
+    @Column(name = "document_id", nullable = false)
+    private UUID documentId;
+
+    @Column(name = "patient_profile_id", nullable = false)
+    private UUID patientProfileId;
+
+    @Column(name = "claim_id")
+    private UUID claimId;
+
+    @Column(name = "hospital_id")
+    private UUID hospitalId;
+
+    @Column(name = "created_at", nullable = false)
+    private Instant createdAt;
 
     protected DocumentHashIndex() {
+    }
+
+    public DocumentHashIndex(UUID id, String sha256Hash, UUID documentId, UUID patientProfileId,
+                             UUID claimId, UUID hospitalId, Instant createdAt) {
+        this.id = id;
+        this.sha256Hash = sha256Hash;
+        this.documentId = documentId;
+        this.patientProfileId = patientProfileId;
+        this.claimId = claimId;
+        this.hospitalId = hospitalId;
+        this.createdAt = createdAt;
+    }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public String getSha256Hash() {
+        return sha256Hash;
+    }
+
+    public UUID getDocumentId() {
+        return documentId;
+    }
+
+    public UUID getPatientProfileId() {
+        return patientProfileId;
+    }
+
+    public UUID getClaimId() {
+        return claimId;
+    }
+
+    public UUID getHospitalId() {
+        return hospitalId;
+    }
+
+    public Instant getCreatedAt() {
+        return createdAt;
     }
 }

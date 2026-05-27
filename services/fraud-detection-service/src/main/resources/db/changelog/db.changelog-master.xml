@@ -4,34 +4,61 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet id="001-create-fraud-tables" author="codex">
+    <changeSet id="001-create-fraud-detection-tables" author="codex">
         <sql>
-            CREATE TABLE fraud_check (
+            CREATE TABLE fraud_assessments (
                 id UUID PRIMARY KEY,
-                claim_id UUID NOT NULL UNIQUE,
-                fraud_score INT NOT NULL,
+                claim_id UUID NOT NULL,
+                insurance_company_id UUID NOT NULL,
+                patient_profile_id UUID NOT NULL,
+                hospital_id UUID NULL,
+                doctor_profile_id UUID NULL,
+                fraud_score DECIMAL(5,4) NOT NULL,
+                fraud_level VARCHAR(30) NOT NULL,
+                manual_review_required BOOLEAN NOT NULL,
                 status VARCHAR(40) NOT NULL,
-                checked_at TIMESTAMP NOT NULL
+                created_at TIMESTAMP NOT NULL,
+                completed_at TIMESTAMP NULL
             );
 
-            CREATE TABLE fraud_signal (
+            CREATE TABLE fraud_signals (
                 id UUID PRIMARY KEY,
-                fraud_check_id UUID NOT NULL REFERENCES fraud_check(id),
+                fraud_assessment_id UUID NOT NULL REFERENCES fraud_assessments(id),
                 signal_type VARCHAR(80) NOT NULL,
                 severity VARCHAR(30) NOT NULL,
-                description TEXT NOT NULL
+                score_impact DECIMAL(5,4) NOT NULL,
+                message TEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL
             );
 
             CREATE TABLE document_hash_index (
                 id UUID PRIMARY KEY,
                 sha256_hash CHAR(64) NOT NULL,
-                file_size_bytes BIGINT NOT NULL,
-                mime_type VARCHAR(120) NOT NULL,
-                invoice_number VARCHAR(120) NULL,
-                clinic_id UUID NULL,
-                patient_id UUID NULL,
-                first_seen_at TIMESTAMP NOT NULL
+                claim_id UUID NOT NULL,
+                patient_profile_id UUID NOT NULL,
+                insurance_company_id UUID NOT NULL,
+                hospital_id UUID NULL,
+                created_at TIMESTAMP NOT NULL
             );
+
+            CREATE INDEX idx_fraud_assessments_claim ON fraud_assessments(claim_id);
+            CREATE INDEX idx_fraud_assessments_company ON fraud_assessments(insurance_company_id);
+            CREATE INDEX idx_fraud_assessments_patient ON fraud_assessments(patient_profile_id);
+            CREATE INDEX idx_fraud_assessments_hospital ON fraud_assessments(hospital_id);
+            CREATE INDEX idx_fraud_assessments_doctor ON fraud_assessments(doctor_profile_id);
+            CREATE INDEX idx_fraud_assessments_status ON fraud_assessments(status);
+            CREATE INDEX idx_fraud_assessments_created_at ON fraud_assessments(created_at);
+
+            CREATE INDEX idx_fraud_signals_assessment ON fraud_signals(fraud_assessment_id);
+            CREATE INDEX idx_fraud_signals_type ON fraud_signals(signal_type);
+
+            CREATE INDEX idx_document_hash_index_hash ON document_hash_index(sha256_hash);
+            CREATE INDEX idx_document_hash_index_claim ON document_hash_index(claim_id);
+            CREATE INDEX idx_document_hash_index_patient ON document_hash_index(patient_profile_id);
+            CREATE INDEX idx_document_hash_index_company ON document_hash_index(insurance_company_id);
+            CREATE INDEX idx_document_hash_index_hospital ON document_hash_index(hospital_id);
         </sql>
     </changeSet>
+
+    <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

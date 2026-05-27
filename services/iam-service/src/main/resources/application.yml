@@ -16,6 +16,15 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:/db/changelog/db.changelog-master.xml
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+
+outbox:
+  topic: ${IAM_OUTBOX_TOPIC:iam.events}
+  max-retries: ${OUTBOX_MAX_RETRIES:5}
+  scheduler:
+    enabled: ${OUTBOX_SCHEDULER_ENABLED:true}
+    interval: ${OUTBOX_SCHEDULER_INTERVAL:5000}
 
 iam:
   jwt:

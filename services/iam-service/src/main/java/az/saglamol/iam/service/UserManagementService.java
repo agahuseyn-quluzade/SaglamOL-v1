@@ -1,9 +1,12 @@
 package az.saglamol.iam.service;
 
+import az.saglamol.common.events.iam.UserRoleAssignedEvent;
+import az.saglamol.common.kafka.outbox.OutboxEventService;
 import az.saglamol.iam.dto.request.AssignRoleRequest;
 import az.saglamol.iam.dto.request.UpdateUserStatusRequest;
 import az.saglamol.iam.dto.response.UserResponse;
 import az.saglamol.iam.entity.Permission;
+import az.saglamol.iam.entity.OutboxEvent;
 import az.saglamol.iam.entity.Role;
 import az.saglamol.iam.entity.UserAccount;
 import az.saglamol.iam.exception.IamException;
@@ -13,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -22,10 +26,13 @@ public class UserManagementService {
 
     private final UserAccountRepository userAccountRepository;
     private final RoleRepository roleRepository;
+    private final OutboxEventService<OutboxEvent> outboxEventService;
 
-    public UserManagementService(UserAccountRepository userAccountRepository, RoleRepository roleRepository) {
+    public UserManagementService(UserAccountRepository userAccountRepository, RoleRepository roleRepository,
+                                 OutboxEventService<OutboxEvent> outboxEventService) {
         this.userAccountRepository = userAccountRepository;
         this.roleRepository = roleRepository;
+        this.outboxEventService = outboxEventService;
     }
 
     @Transactional(readOnly = true)
@@ -64,6 +71,8 @@ public class UserManagementService {
         UserAccount user = findUser(id);
         Role role = findRole(request.roleName());
         user.addRole(role);
+        outboxEventService.saveEvent("User", user.getId(), UserRoleAssignedEvent.class.getSimpleName(),
+                new UserRoleAssignedEvent(user.getId(), role.getCode(), Instant.now()));
         return toResponse(user);
     }
 

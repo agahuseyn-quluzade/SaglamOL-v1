@@ -1,11 +1,15 @@
 package az.saglamol.userprofile.service;
 
 import az.saglamol.common.security.AuthContext;
+import az.saglamol.common.events.profile.InsuranceCompanyActivatedEvent;
+import az.saglamol.common.events.profile.InsuranceCompanyCreatedEvent;
+import az.saglamol.common.kafka.outbox.OutboxEventService;
 import az.saglamol.userprofile.dto.request.CreateInsuranceCompanyRequest;
 import az.saglamol.userprofile.dto.request.UpdateInsuranceCompanyRequest;
 import az.saglamol.userprofile.dto.response.InsuranceCompanyResponse;
 import az.saglamol.userprofile.entity.InsuranceCompany;
 import az.saglamol.userprofile.entity.InsuranceCompanyStatus;
+import az.saglamol.userprofile.entity.OutboxEvent;
 import az.saglamol.userprofile.exception.UserProfileException;
 import az.saglamol.userprofile.mapper.InsuranceCompanyMapper;
 import az.saglamol.userprofile.repository.InsuranceCompanyRepository;
@@ -25,15 +29,18 @@ public class InsuranceCompanyService {
     private final InsuranceCompanyRepository companyRepository;
     private final InsuranceCompanyMapper companyMapper;
     private final InsuranceCompanyAccessService accessService;
+    private final OutboxEventService<OutboxEvent> outboxEventService;
 
     public InsuranceCompanyService(
             InsuranceCompanyRepository companyRepository,
             InsuranceCompanyMapper companyMapper,
-            InsuranceCompanyAccessService accessService
+            InsuranceCompanyAccessService accessService,
+            OutboxEventService<OutboxEvent> outboxEventService
     ) {
         this.companyRepository = companyRepository;
         this.companyMapper = companyMapper;
         this.accessService = accessService;
+        this.outboxEventService = outboxEventService;
     }
 
     @Transactional
@@ -58,7 +65,10 @@ public class InsuranceCompanyService {
                 now,
                 now
         );
-        return companyMapper.toResponse(companyRepository.save(company));
+        InsuranceCompany saved = companyRepository.save(company);
+        outboxEventService.saveEvent("InsuranceCompany", saved.getId(), InsuranceCompanyCreatedEvent.class.getSimpleName(),
+                new InsuranceCompanyCreatedEvent(saved.getId(), saved.getName(), saved.getTaxId(), Instant.now()));
+        return companyMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -116,6 +126,10 @@ public class InsuranceCompanyService {
         InsuranceCompany company = companyById(companyId);
         accessService.requireCompanyManage(companyId, authContext);
         company.changeStatus(newStatus, Instant.now());
+        if (newStatus == InsuranceCompanyStatus.ACTIVE) {
+            outboxEventService.saveEvent("InsuranceCompany", company.getId(), InsuranceCompanyActivatedEvent.class.getSimpleName(),
+                    new InsuranceCompanyActivatedEvent(company.getId(), Instant.now()));
+        }
         return companyMapper.toResponse(company);
     }
 

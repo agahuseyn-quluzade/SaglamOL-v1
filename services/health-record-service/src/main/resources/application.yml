@@ -6,6 +6,25 @@ spring:
   config:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
 
+minio:
+  endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+  access-key: ${MINIO_ACCESS_KEY:minioadmin}
+  secret-key: ${MINIO_SECRET_KEY:minioadmin}
+  bucket:
+    medical-documents: ${MINIO_MEDICAL_DOCUMENTS_BUCKET:medical-documents}
+
+saglamol:
+  security:
+    internal-auth:
+      secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
+
+outbox:
+  topic: ${HEALTH_RECORD_OUTBOX_TOPIC:health-record.events}
+  max-retries: ${OUTBOX_MAX_RETRIES:5}
+  scheduler:
+    enabled: ${OUTBOX_SCHEDULER_ENABLED:true}
+    interval: ${OUTBOX_SCHEDULER_INTERVAL:5000}
+
 management:
   endpoints:
     web:

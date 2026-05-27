@@ -6,31 +6,47 @@
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
     <changeSet id="001-create-ai-risk-tables" author="codex">
         <sql>
-            CREATE TABLE risk_analysis (
-                id UUID PRIMARY KEY,
-                claim_id UUID NOT NULL UNIQUE,
-                risk_score INT NOT NULL,
-                risk_level VARCHAR(30) NOT NULL,
-                confidence DECIMAL(5,4) NOT NULL,
-                model_version VARCHAR(80) NOT NULL,
-                created_at TIMESTAMP NOT NULL
-            );
-
-            CREATE TABLE risk_reason (
-                id UUID PRIMARY KEY,
-                analysis_id UUID NOT NULL REFERENCES risk_analysis(id),
-                reason_code VARCHAR(80) NOT NULL,
-                description TEXT NOT NULL
-            );
-
-            CREATE TABLE ai_request_log (
+            CREATE TABLE ai_risk_assessments (
                 id UUID PRIMARY KEY,
                 claim_id UUID NOT NULL,
-                provider VARCHAR(80) NOT NULL,
-                latency_ms BIGINT NOT NULL,
-                status VARCHAR(40) NOT NULL,
+                insurance_company_id UUID NOT NULL,
+                patient_profile_id UUID NOT NULL,
+                policy_id UUID NOT NULL,
+                hospital_id UUID NULL,
+                doctor_profile_id UUID NULL,
+                risk_score DECIMAL(5,4) NOT NULL,
+                risk_level VARCHAR(30) NOT NULL,
+                confidence DECIMAL(5,4) NOT NULL,
+                reasons TEXT NOT NULL,
+                raw_provider_response TEXT NULL,
+                status VARCHAR(30) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                completed_at TIMESTAMP NULL
+            );
+
+            CREATE TABLE ai_request_logs (
+                id UUID PRIMARY KEY,
+                claim_id UUID NOT NULL,
+                request_payload TEXT NOT NULL,
+                response_payload TEXT NULL,
+                provider_name VARCHAR(80) NOT NULL,
+                model VARCHAR(120) NOT NULL,
+                status VARCHAR(30) NOT NULL,
+                error_message TEXT NULL,
+                duration_ms BIGINT NOT NULL,
                 created_at TIMESTAMP NOT NULL
             );
+
+            CREATE INDEX idx_ai_risk_assessments_claim ON ai_risk_assessments(claim_id);
+            CREATE INDEX idx_ai_risk_assessments_company ON ai_risk_assessments(insurance_company_id);
+            CREATE INDEX idx_ai_risk_assessments_patient ON ai_risk_assessments(patient_profile_id);
+            CREATE INDEX idx_ai_risk_assessments_policy ON ai_risk_assessments(policy_id);
+            CREATE INDEX idx_ai_risk_assessments_hospital ON ai_risk_assessments(hospital_id);
+            CREATE INDEX idx_ai_risk_assessments_status ON ai_risk_assessments(status);
+            CREATE INDEX idx_ai_request_logs_claim ON ai_request_logs(claim_id);
+            CREATE INDEX idx_ai_request_logs_status ON ai_request_logs(status);
         </sql>
     </changeSet>
+
+    <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

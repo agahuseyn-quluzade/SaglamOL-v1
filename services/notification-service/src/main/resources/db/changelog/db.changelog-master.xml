@@ -6,29 +6,67 @@
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
     <changeSet id="001-create-notification-tables" author="codex">
         <sql>
-            CREATE TABLE notification (
+            CREATE TABLE notifications (
                 id UUID PRIMARY KEY,
                 recipient_user_id UUID NOT NULL,
-                channel VARCHAR(40) NOT NULL,
-                status VARCHAR(40) NOT NULL,
+                recipient_email VARCHAR(255) NULL,
+                recipient_phone VARCHAR(60) NULL,
+                channel VARCHAR(20) NOT NULL,
+                template_code VARCHAR(120) NOT NULL,
                 subject VARCHAR(255) NULL,
-                body TEXT NULL,
-                created_at TIMESTAMP NOT NULL
-            );
-
-            CREATE TABLE notification_template (
-                id UUID PRIMARY KEY,
-                code VARCHAR(120) NOT NULL UNIQUE,
-                channel VARCHAR(40) NOT NULL,
-                body TEXT NOT NULL
-            );
-
-            CREATE TABLE notification_retry (
-                id UUID PRIMARY KEY,
-                notification_id UUID NOT NULL REFERENCES notification(id),
+                message TEXT NOT NULL,
+                status VARCHAR(40) NOT NULL,
                 retry_count INT NOT NULL,
-                next_retry_at TIMESTAMP NOT NULL
+                max_retries INT NOT NULL DEFAULT 3,
+                related_entity_type VARCHAR(80) NULL,
+                related_entity_id UUID NULL,
+                insurance_company_id UUID NULL,
+                hospital_id UUID NULL,
+                created_at TIMESTAMP NOT NULL,
+                sent_at TIMESTAMP NULL,
+                updated_at TIMESTAMP NOT NULL,
+                error_message TEXT NULL
             );
+
+            CREATE TABLE notification_templates (
+                id UUID PRIMARY KEY,
+                template_code VARCHAR(120) NOT NULL,
+                channel VARCHAR(20) NOT NULL,
+                subject_template VARCHAR(255) NULL,
+                body_template TEXT NOT NULL,
+                status VARCHAR(20) NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                CONSTRAINT uk_notification_template_code_channel UNIQUE(template_code, channel)
+            );
+
+            CREATE TABLE notification_retries (
+                id UUID PRIMARY KEY,
+                notification_id UUID NOT NULL REFERENCES notifications(id),
+                attempt_number INT NOT NULL,
+                failure_reason TEXT NOT NULL,
+                attempted_at TIMESTAMP NOT NULL
+            );
+
+            CREATE INDEX idx_notifications_recipient_user ON notifications(recipient_user_id);
+            CREATE INDEX idx_notifications_company ON notifications(insurance_company_id);
+            CREATE INDEX idx_notifications_hospital ON notifications(hospital_id);
+            CREATE INDEX idx_notifications_status_retry ON notifications(status, retry_count);
+            CREATE INDEX idx_notifications_related ON notifications(related_entity_type, related_entity_id);
+            CREATE INDEX idx_notification_retries_notification ON notification_retries(notification_id);
+
+            INSERT INTO notification_templates(id, template_code, channel, subject_template, body_template, status, created_at) VALUES
+            ('00000000-0000-0000-0000-000000020001', 'PASSWORD_RESET', 'IN_APP', 'Password reset', 'Use your password reset link to continue.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020002', 'INSURANCE_COMPANY_CREATED', 'IN_APP', 'Insurance company created', 'Insurance company {{companyName}} was created.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020003', 'POLICY_CREATED', 'IN_APP', 'Policy created', 'Policy {{policyNumber}} was created. Premium: {{premiumAmount}}.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020004', 'POLICY_ACTIVATED', 'IN_APP', 'Policy activated', 'Your policy {{policyId}} is now active.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020005', 'PAYMENT_COMPLETED', 'IN_APP', 'Payment completed', 'Payment {{paymentNumber}} for {{amount}} {{currency}} was completed.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020006', 'PAYMENT_FAILED', 'IN_APP', 'Payment failed', 'Payment failed. Reason: {{reason}}.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020007', 'CLAIM_SUBMITTED', 'IN_APP', 'Claim submitted', 'Claim {{claimNumber}} was submitted. Amount: {{amount}}.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020008', 'CLAIM_APPROVED', 'IN_APP', 'Claim approved', 'Your claim was approved for {{approvedAmount}}.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020009', 'CLAIM_REJECTED', 'IN_APP', 'Claim rejected', 'Your claim was rejected. Reason: {{reason}}.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000020010', 'CLAIM_NEEDS_MORE_DOCUMENTS', 'IN_APP', 'More documents needed', 'More documents are required for your claim. Reason: {{reason}}.', 'ACTIVE', CURRENT_TIMESTAMP);
         </sql>
     </changeSet>
+
+    <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

@@ -1,5 +1,6 @@
 package az.saglamol.userprofile.service;
 
+import az.saglamol.common.kafka.outbox.OutboxEventService;
 import az.saglamol.common.security.AuthContext;
 import az.saglamol.common.security.RoleConstants;
 import az.saglamol.userprofile.dto.request.CreateInsuranceCompanyRequest;
@@ -10,6 +11,7 @@ import az.saglamol.userprofile.entity.InsuranceCompany;
 import az.saglamol.userprofile.entity.InsuranceCompanyStaffProfile;
 import az.saglamol.userprofile.entity.InsuranceCompanyStaffRoleType;
 import az.saglamol.userprofile.entity.InsuranceCompanyStatus;
+import az.saglamol.userprofile.entity.OutboxEvent;
 import az.saglamol.userprofile.entity.ProfileStatus;
 import az.saglamol.userprofile.exception.UserProfileException;
 import az.saglamol.userprofile.mapper.AgentMapper;
@@ -41,17 +43,21 @@ class InsuranceCompanyServiceTest {
     private final InsuranceCompanyRepository companyRepository = mock(InsuranceCompanyRepository.class);
     private final InsuranceCompanyStaffProfileRepository staffRepository = mock(InsuranceCompanyStaffProfileRepository.class);
     private final AgentProfileRepository agentRepository = mock(AgentProfileRepository.class);
+    @SuppressWarnings("unchecked")
+    private final OutboxEventService<OutboxEvent> outboxEventService = mock(OutboxEventService.class);
     private final InsuranceCompanyAccessService accessService = new InsuranceCompanyAccessService(staffRepository, agentRepository);
     private final InsuranceCompanyService companyService = new InsuranceCompanyService(
             companyRepository,
             Mappers.getMapper(InsuranceCompanyMapper.class),
-            accessService
+            accessService,
+            outboxEventService
     );
     private final InsuranceCompanyStaffService staffService = new InsuranceCompanyStaffService(
             companyRepository,
             staffRepository,
             Mappers.getMapper(InsuranceCompanyStaffMapper.class),
-            accessService
+            accessService,
+            outboxEventService
     );
     private final AgentCompanyService agentCompanyService = new AgentCompanyService(
             agentRepository,

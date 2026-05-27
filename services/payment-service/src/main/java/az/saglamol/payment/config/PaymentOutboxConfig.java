@@ -1,5 +1,6 @@
 package az.saglamol.payment.config;
 
+import az.saglamol.common.kafka.consumer.ProcessedEventService;
 import az.saglamol.common.kafka.outbox.EventEnvelopeFactory;
 import az.saglamol.common.kafka.outbox.KafkaPublisher;
 import az.saglamol.common.kafka.outbox.OutboxEventService;
@@ -7,6 +8,7 @@ import az.saglamol.common.kafka.outbox.OutboxProperties;
 import az.saglamol.common.kafka.outbox.OutboxPublisherScheduler;
 import az.saglamol.payment.entity.OutboxEvent;
 import az.saglamol.payment.repository.OutboxEventRepository;
+import az.saglamol.payment.repository.PaymentProcessedEventRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
@@ -24,6 +26,11 @@ public class PaymentOutboxConfig {
             OutboxProperties properties
     ) {
         return new OutboxEventService<>(repository, objectMapper, OutboxEvent::new, properties);
+    }
+
+    @Bean
+    ProcessedEventService paymentProcessedEventService(PaymentProcessedEventRepository repository) {
+        return new ProcessedEventService(repository);
     }
 
     @Bean

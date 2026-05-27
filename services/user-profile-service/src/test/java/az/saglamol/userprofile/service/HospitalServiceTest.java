@@ -1,5 +1,7 @@
 package az.saglamol.userprofile.service;
 
+import az.saglamol.common.kafka.outbox.OutboxEventService;
+import az.saglamol.userprofile.entity.OutboxEvent;
 import az.saglamol.userprofile.dto.request.CreateHospitalRequest;
 import az.saglamol.userprofile.entity.HospitalStatus;
 import az.saglamol.userprofile.repository.DoctorHospitalAssignmentRepository;
@@ -26,7 +28,8 @@ class HospitalServiceTest {
                 mock(HospitalStaffProfileRepository.class),
                 mock(DoctorHospitalAssignmentRepository.class),
                 mock(DoctorProfileRepository.class),
-                mock(ProviderAccessService.class)
+                mock(ProviderAccessService.class),
+                mockOutbox()
         );
 
         when(hospitalRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -41,5 +44,10 @@ class HospitalServiceTest {
 
         assertEquals("Saglam Hospital", response.name());
         assertEquals(HospitalStatus.PENDING.name(), response.status());
+    }
+
+    @SuppressWarnings("unchecked")
+    private OutboxEventService<OutboxEvent> mockOutbox() {
+        return mock(OutboxEventService.class);
     }
 }

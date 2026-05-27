@@ -1,10 +1,13 @@
 package az.saglamol.userprofile.service;
 
 import az.saglamol.common.security.AuthContext;
+import az.saglamol.common.events.profile.InsuranceCompanyStaffCreatedEvent;
+import az.saglamol.common.kafka.outbox.OutboxEventService;
 import az.saglamol.userprofile.dto.request.CreateInsuranceCompanyStaffRequest;
 import az.saglamol.userprofile.dto.response.InsuranceCompanyStaffResponse;
 import az.saglamol.userprofile.entity.InsuranceCompanyStaffProfile;
 import az.saglamol.userprofile.entity.InsuranceCompanyStaffStatus;
+import az.saglamol.userprofile.entity.OutboxEvent;
 import az.saglamol.userprofile.exception.UserProfileException;
 import az.saglamol.userprofile.mapper.InsuranceCompanyStaffMapper;
 import az.saglamol.userprofile.repository.InsuranceCompanyRepository;
@@ -24,17 +27,20 @@ public class InsuranceCompanyStaffService {
     private final InsuranceCompanyStaffProfileRepository staffRepository;
     private final InsuranceCompanyStaffMapper staffMapper;
     private final InsuranceCompanyAccessService accessService;
+    private final OutboxEventService<OutboxEvent> outboxEventService;
 
     public InsuranceCompanyStaffService(
             InsuranceCompanyRepository companyRepository,
             InsuranceCompanyStaffProfileRepository staffRepository,
             InsuranceCompanyStaffMapper staffMapper,
-            InsuranceCompanyAccessService accessService
+            InsuranceCompanyAccessService accessService,
+            OutboxEventService<OutboxEvent> outboxEventService
     ) {
         this.companyRepository = companyRepository;
         this.staffRepository = staffRepository;
         this.staffMapper = staffMapper;
         this.accessService = accessService;
+        this.outboxEventService = outboxEventService;
     }
 
     @Transactional
@@ -65,7 +71,10 @@ public class InsuranceCompanyStaffService {
                 now,
                 now
         );
-        return staffMapper.toResponse(staffRepository.save(staff));
+        InsuranceCompanyStaffProfile saved = staffRepository.save(staff);
+        outboxEventService.saveEvent("InsuranceCompanyStaff", saved.getId(), InsuranceCompanyStaffCreatedEvent.class.getSimpleName(),
+                new InsuranceCompanyStaffCreatedEvent(companyId, saved.getId(), saved.getIamUserId(), saved.getRoleType().name(), Instant.now()));
+        return staffMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)

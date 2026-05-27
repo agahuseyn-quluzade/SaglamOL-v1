@@ -5,7 +5,9 @@ dependencies {
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.liquibase:liquibase-core'
     runtimeOnly 'org.postgresql:postgresql'
+    testRuntimeOnly 'com.h2database:h2'
     implementation project(':common:common-exception')
     implementation project(':common:common-security')
     implementation project(':common:common-events')
+    implementation project(':common:common-kafka')
 }

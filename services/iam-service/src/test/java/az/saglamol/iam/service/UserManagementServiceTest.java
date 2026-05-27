@@ -1,8 +1,10 @@
 package az.saglamol.iam.service;
 
+import az.saglamol.common.kafka.outbox.OutboxEventService;
 import az.saglamol.common.security.RoleConstants;
 import az.saglamol.iam.dto.request.AssignRoleRequest;
 import az.saglamol.iam.dto.request.UpdateUserStatusRequest;
+import az.saglamol.iam.entity.OutboxEvent;
 import az.saglamol.iam.entity.Role;
 import az.saglamol.iam.entity.UserAccount;
 import az.saglamol.iam.entity.UserStatus;
@@ -23,7 +25,9 @@ class UserManagementServiceTest {
 
     private final UserAccountRepository userAccountRepository = mock(UserAccountRepository.class);
     private final RoleRepository roleRepository = mock(RoleRepository.class);
-    private final UserManagementService service = new UserManagementService(userAccountRepository, roleRepository);
+    @SuppressWarnings("unchecked")
+    private final OutboxEventService<OutboxEvent> outboxEventService = mock(OutboxEventService.class);
+    private final UserManagementService service = new UserManagementService(userAccountRepository, roleRepository, outboxEventService);
 
     @Test
     void assignsRoleToUser() {

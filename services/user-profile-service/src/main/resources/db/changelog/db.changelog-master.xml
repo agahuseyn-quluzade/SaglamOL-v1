@@ -337,4 +337,6 @@
             </sql>
         </rollback>
     </changeSet>
+
+    <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

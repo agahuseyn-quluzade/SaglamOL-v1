@@ -5,6 +5,37 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   config:
     import: optional:configserver:${CONFIG_SERVER_URL:http://localhost:8888}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: ${CLAIM_KAFKA_GROUP_ID:claim-service-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: az.saglamol.common.events,az.saglamol.common.events.*
+        spring.json.value.default.type: az.saglamol.common.events.EventEnvelope
+        spring.json.use.type.headers: false
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+claim:
+  feign:
+    connect-timeout-ms: ${CLAIM_FEIGN_CONNECT_TIMEOUT_MS:2000}
+    read-timeout-ms: ${CLAIM_FEIGN_READ_TIMEOUT_MS:5000}
+
+saglamol:
+  security:
+    internal-auth:
+      secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
+
+outbox:
+  topic: ${CLAIM_OUTBOX_TOPIC:claim.events}
+  max-retries: ${OUTBOX_MAX_RETRIES:5}
+  scheduler:
+    enabled: ${OUTBOX_SCHEDULER_ENABLED:true}
+    interval: ${OUTBOX_SCHEDULER_INTERVAL:5000}
 
 management:
   endpoints:

@@ -1,5 +1,8 @@
 package az.saglamol.userprofile.service;
 
+import az.saglamol.common.events.profile.HospitalCreatedEvent;
+import az.saglamol.common.events.profile.HospitalStaffCreatedEvent;
+import az.saglamol.common.kafka.outbox.OutboxEventService;
 import az.saglamol.userprofile.dto.request.AssignDoctorToHospitalRequest;
 import az.saglamol.userprofile.dto.request.CreateHospitalBranchRequest;
 import az.saglamol.userprofile.dto.request.CreateHospitalRequest;
@@ -14,6 +17,7 @@ import az.saglamol.userprofile.entity.Hospital;
 import az.saglamol.userprofile.entity.HospitalBranch;
 import az.saglamol.userprofile.entity.HospitalStaffProfile;
 import az.saglamol.userprofile.entity.HospitalStatus;
+import az.saglamol.userprofile.entity.OutboxEvent;
 import az.saglamol.userprofile.exception.UserProfileException;
 import az.saglamol.userprofile.repository.DoctorHospitalAssignmentRepository;
 import az.saglamol.userprofile.repository.DoctorProfileRepository;
@@ -39,6 +43,7 @@ public class HospitalService {
     private final DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository;
     private final DoctorProfileRepository doctorProfileRepository;
     private final ProviderAccessService providerAccessService;
+    private final OutboxEventService<OutboxEvent> outboxEventService;
 
     public HospitalService(
             HospitalRepository hospitalRepository,
@@ -46,7 +51,8 @@ public class HospitalService {
             HospitalStaffProfileRepository hospitalStaffProfileRepository,
             DoctorHospitalAssignmentRepository doctorHospitalAssignmentRepository,
             DoctorProfileRepository doctorProfileRepository,
-            ProviderAccessService providerAccessService
+            ProviderAccessService providerAccessService,
+            OutboxEventService<OutboxEvent> outboxEventService
     ) {
         this.hospitalRepository = hospitalRepository;
         this.hospitalBranchRepository = hospitalBranchRepository;
@@ -54,6 +60,7 @@ public class HospitalService {
         this.doctorHospitalAssignmentRepository = doctorHospitalAssignmentRepository;
         this.doctorProfileRepository = doctorProfileRepository;
         this.providerAccessService = providerAccessService;
+        this.outboxEventService = outboxEventService;
     }
 
     @Transactional
@@ -72,7 +79,10 @@ public class HospitalService {
                 HospitalStatus.PENDING,
                 Instant.now()
         );
-        return toResponse(hospitalRepository.save(hospital));
+        Hospital saved = hospitalRepository.save(hospital);
+        outboxEventService.saveEvent("Hospital", saved.getId(), HospitalCreatedEvent.class.getSimpleName(),
+                new HospitalCreatedEvent(saved.getId(), saved.getName(), Instant.now()));
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)
@@ -170,7 +180,10 @@ public class HospitalService {
                 request.position(),
                 Instant.now()
         );
-        return toResponse(hospitalStaffProfileRepository.save(staff));
+        HospitalStaffProfile saved = hospitalStaffProfileRepository.save(staff);
+        outboxEventService.saveEvent("HospitalStaff", saved.getId(), HospitalStaffCreatedEvent.class.getSimpleName(),
+                new HospitalStaffCreatedEvent(hospitalId, saved.getId(), saved.getUserId(), Instant.now()));
+        return toResponse(saved);
     }
 
     @Transactional(readOnly = true)

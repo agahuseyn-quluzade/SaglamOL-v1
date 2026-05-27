@@ -4,66 +4,93 @@
         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
         https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
-    <changeSet id="001-create-claim-tables" author="codex">
+    <changeSet id="001-create-claim-core-tables" author="codex">
         <sql>
-            CREATE TABLE claim (
+            CREATE TABLE claims (
                 id UUID PRIMARY KEY,
-                patient_id UUID NOT NULL,
+                claim_number VARCHAR(80) NOT NULL,
                 policy_id UUID NOT NULL,
-                status VARCHAR(50) NOT NULL,
-                claim_type VARCHAR(80) NOT NULL,
-                total_amount DECIMAL(12,2) NOT NULL,
+                insurance_company_id UUID NOT NULL,
+                patient_profile_id UUID NOT NULL,
+                hospital_id UUID NULL,
+                doctor_profile_id UUID NULL,
+                status VARCHAR(40) NOT NULL,
+                service_type VARCHAR(80) NOT NULL,
+                treatment_date DATE NOT NULL,
+                claim_amount DECIMAL(14,2) NOT NULL,
+                approved_amount DECIMAL(14,2) NULL,
+                covered_amount DECIMAL(14,2) NOT NULL,
+                patient_pay_amount DECIMAL(14,2) NOT NULL,
+                payout_recipient_type VARCHAR(30) NOT NULL,
+                policy_reservation_id UUID NULL,
+                diagnosis_code VARCHAR(80) NULL,
+                reason TEXT NULL,
+                notes TEXT NULL,
+                risk_score INT NULL,
+                risk_level VARCHAR(30) NULL,
+                fraud_score INT NULL,
+                fraud_level VARCHAR(30) NULL,
+                fraud_passed BOOLEAN NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE claim_items (
+                id UUID PRIMARY KEY,
+                claim_id UUID NOT NULL REFERENCES claims(id),
+                description VARCHAR(500) NOT NULL,
+                service_code VARCHAR(80) NULL,
+                amount DECIMAL(14,2) NOT NULL,
+                quantity INT NOT NULL,
+                service_date DATE NULL,
+                document_id UUID NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE claim_document_references (
+                id UUID PRIMARY KEY,
+                claim_id UUID NOT NULL REFERENCES claims(id),
+                document_id UUID NOT NULL,
+                document_type VARCHAR(80) NOT NULL,
+                required BOOLEAN NOT NULL,
+                status VARCHAR(30) NOT NULL,
                 created_at TIMESTAMP NOT NULL
             );
 
-            CREATE TABLE claim_item (
+            CREATE TABLE claim_decisions (
                 id UUID PRIMARY KEY,
-                claim_id UUID NOT NULL REFERENCES claim(id),
-                service_type VARCHAR(80) NOT NULL,
-                amount DECIMAL(12,2) NOT NULL,
-                service_date DATE NOT NULL
-            );
-
-            CREATE TABLE claim_decision (
-                id UUID PRIMARY KEY,
-                claim_id UUID NOT NULL REFERENCES claim(id),
+                claim_id UUID NOT NULL REFERENCES claims(id),
                 decision VARCHAR(50) NOT NULL,
                 decided_by UUID NOT NULL,
-                reason TEXT NULL,
+                reason TEXT NOT NULL,
+                approved_amount DECIMAL(14,2) NULL,
                 created_at TIMESTAMP NOT NULL
             );
 
             CREATE TABLE claim_status_history (
                 id UUID PRIMARY KEY,
-                claim_id UUID NOT NULL REFERENCES claim(id),
-                old_status VARCHAR(50) NULL,
-                new_status VARCHAR(50) NOT NULL,
-                changed_at TIMESTAMP NOT NULL
+                claim_id UUID NOT NULL REFERENCES claims(id),
+                from_status VARCHAR(40) NULL,
+                to_status VARCHAR(40) NOT NULL,
+                changed_by_user_id UUID NULL,
+                reason TEXT NULL,
+                created_at TIMESTAMP NOT NULL
             );
 
-            CREATE TABLE outbox_event (
-                id UUID PRIMARY KEY,
-                aggregate_type VARCHAR(80) NOT NULL,
-                aggregate_id UUID NOT NULL,
-                event_type VARCHAR(120) NOT NULL,
-                schema_version VARCHAR(20) NOT NULL,
-                payload TEXT NOT NULL,
-                status VARCHAR(30) NOT NULL DEFAULT 'NEW',
-                retry_count INT NOT NULL DEFAULT 0,
-                next_retry_at TIMESTAMP NULL,
-                last_error TEXT NULL,
-                created_at TIMESTAMP NOT NULL,
-                published_at TIMESTAMP NULL
-            );
-
-            CREATE TABLE consumer_processed_event (
-                event_id UUID NOT NULL,
-                consumer_name VARCHAR(120) NOT NULL,
-                processed_at TIMESTAMP NOT NULL,
-                PRIMARY KEY (event_id, consumer_name)
-            );
-
-            CREATE INDEX idx_outbox_status_retry ON outbox_event(status, next_retry_at, created_at);
+            CREATE UNIQUE INDEX uk_claims_claim_number ON claims(claim_number);
+            CREATE INDEX idx_claims_policy_id ON claims(policy_id);
+            CREATE INDEX idx_claims_insurance_company_id ON claims(insurance_company_id);
+            CREATE INDEX idx_claims_patient_profile_id ON claims(patient_profile_id);
+            CREATE INDEX idx_claims_hospital_id ON claims(hospital_id);
+            CREATE INDEX idx_claims_status ON claims(status);
+            CREATE INDEX idx_claims_treatment_date ON claims(treatment_date);
+            CREATE INDEX idx_claim_items_claim_id ON claim_items(claim_id);
+            CREATE INDEX idx_claim_document_references_claim_id ON claim_document_references(claim_id);
+            CREATE INDEX idx_claim_decisions_claim_id ON claim_decisions(claim_id);
+            CREATE INDEX idx_claim_status_history_claim_id ON claim_status_history(claim_id);
         </sql>
     </changeSet>
+
+    <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>
