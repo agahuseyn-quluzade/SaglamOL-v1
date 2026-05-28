@@ -1,0 +1,400 @@
+{
+  "info": {
+    "name": "SaglamOL Full Platform Flow",
+    "_postman_id": "3f6f3eb7-8da1-45a4-a4b7-1f6d42e9c6c7",
+    "description": "End-to-end SaglamOL backend flow: IAM, company, policy, payment, health record, claim, fraud, AI risk, review, payout and notifications.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost" },
+    { "key": "gateway_url", "value": "http://localhost:8080" },
+    { "key": "iam_url", "value": "http://localhost:8081" },
+    { "key": "profile_url", "value": "http://localhost:8082" },
+    { "key": "policy_url", "value": "http://localhost:8083" },
+    { "key": "claim_url", "value": "http://localhost:8084" },
+    { "key": "health_url", "value": "http://localhost:8085" },
+    { "key": "ai_risk_url", "value": "http://localhost:8086" },
+    { "key": "fraud_url", "value": "http://localhost:8087" },
+    { "key": "notification_url", "value": "http://localhost:8088" },
+    { "key": "payment_url", "value": "http://localhost:8089" },
+    { "key": "access_token", "value": "" },
+    { "key": "patient_token", "value": "" },
+    { "key": "agent_token", "value": "" },
+    { "key": "insurance_admin_token", "value": "" },
+    { "key": "patient_user_id", "value": "" },
+    { "key": "patient_profile_id", "value": "" },
+    { "key": "company_id", "value": "" },
+    { "key": "hospital_id", "value": "" },
+    { "key": "branch_id", "value": "" },
+    { "key": "doctor_profile_id", "value": "" },
+    { "key": "product_id", "value": "" },
+    { "key": "coverage_rule_id", "value": "" },
+    { "key": "policy_id", "value": "" },
+    { "key": "payment_id", "value": "" },
+    { "key": "health_record_id", "value": "" },
+    { "key": "document_id", "value": "" },
+    { "key": "claim_id", "value": "" },
+    { "key": "fraud_assessment_id", "value": "" },
+    { "key": "ai_assessment_id", "value": "" },
+    { "key": "notification_id", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{access_token}}", "type": "string" }
+    ]
+  },
+  "item": [
+    {
+      "name": "01 Admin login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{iam_url}}/api/v1/iam/login/email",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@saglamol.az\",\n  \"password\": \"Admin123!\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('access_token', json.accessToken || json.token || '');"] } }]
+    },
+    {
+      "name": "02 Create insurance company",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{profile_url}}/api/v1/insurance-companies",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Saglam Insurance\",\n  \"taxNumber\": \"9900000001\",\n  \"email\": \"office@saglam-insurance.az\",\n  \"phone\": \"+994501112233\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('company_id', json.id || '');"] } }]
+    },
+    {
+      "name": "03 Activate insurance company",
+      "request": {
+        "method": "PATCH",
+        "url": "{{profile_url}}/api/v1/insurance-companies/{{company_id}}/status?newStatus=ACTIVE"
+      }
+    },
+    {
+      "name": "04 Create insurance admin staff",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{profile_url}}/api/v1/insurance-companies/{{company_id}}/staff",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"iamUserId\": \"00000000-0000-0000-0000-000000000101\",\n  \"role\": \"INSURANCE_ADMIN\",\n  \"department\": \"Operations\"\n}"
+        }
+      }
+    },
+    {
+      "name": "05 Insurance admin login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{iam_url}}/api/v1/iam/login/email",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"insurance.admin@saglamol.az\",\n  \"password\": \"Admin123!\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('insurance_admin_token', json.accessToken || json.token || '');", "pm.collectionVariables.set('access_token', json.accessToken || json.token || '');"] } }]
+    },
+    {
+      "name": "06 Link agent staff",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{profile_url}}/api/v1/insurance-companies/{{company_id}}/staff",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"iamUserId\": \"00000000-0000-0000-0000-000000000102\",\n  \"role\": \"AGENT\",\n  \"department\": \"Claims\"\n}"
+        }
+      }
+    },
+    {
+      "name": "07 Create insurance product",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{policy_url}}/api/v1/insurance-products",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"insuranceCompanyId\": \"{{company_id}}\",\n  \"name\": \"Gold Health Plan\",\n  \"description\": \"Comprehensive outpatient and inpatient cover\",\n  \"status\": \"ACTIVE\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('product_id', json.id || '');"] } }]
+    },
+    {
+      "name": "08 Create coverage rule",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{policy_url}}/api/v1/insurance-products/{{product_id}}/coverage-rules",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"serviceType\": \"CONSULTATION\",\n  \"coveragePercent\": 80,\n  \"annualLimit\": 5000,\n  \"waitingPeriodDays\": 0\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('coverage_rule_id', json.id || '');"] } }]
+    },
+    {
+      "name": "09 Create hospital",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{profile_url}}/api/v1/profiles/hospitals",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Baku Central Hospital\",\n  \"taxNumber\": \"8800000001\",\n  \"email\": \"admin@bch.az\",\n  \"phone\": \"+994502223344\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('hospital_id', json.id || '');"] } }]
+    },
+    {
+      "name": "10 Create hospital branch",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{profile_url}}/api/v1/profiles/hospitals/{{hospital_id}}/branches",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Main Branch\",\n  \"address\": \"Baku\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('branch_id', json.id || '');"] } }]
+    },
+    {
+      "name": "11 Assign doctor",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{profile_url}}/api/v1/profiles/hospitals/{{hospital_id}}/doctors/{{doctor_profile_id}}",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"branchId\": \"{{branch_id}}\",\n  \"specialization\": \"Therapy\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('doctor_profile_id', json.doctorProfileId || json.id || '');"] } }]
+    },
+    {
+      "name": "12 Create provider contract",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{policy_url}}/api/v1/provider-contracts",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"insuranceCompanyId\": \"{{company_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"status\": \"ACTIVE\"\n}"
+        }
+      }
+    },
+    {
+      "name": "13 Patient register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{iam_url}}/api/v1/iam/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"patient.demo@saglamol.az\",\n  \"phone\": \"+994501234567\",\n  \"password\": \"Patient123!\",\n  \"firstName\": \"Demo\",\n  \"lastName\": \"Patient\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('patient_user_id', json.userId || json.id || '');"] } }]
+    },
+    {
+      "name": "14 Patient login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{iam_url}}/api/v1/iam/login/email",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"patient.demo@saglamol.az\",\n  \"password\": \"Patient123!\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('patient_token', json.accessToken || json.token || '');", "pm.collectionVariables.set('access_token', json.accessToken || json.token || '');"] } }]
+    },
+    {
+      "name": "15 Create patient profile",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{profile_url}}/api/v1/profiles/patients",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"iamUserId\": \"{{patient_user_id}}\",\n  \"birthDate\": \"1990-01-10\",\n  \"gender\": \"MALE\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('patient_profile_id', json.patientProfileId || json.id || '');"] } }]
+    },
+    {
+      "name": "16 Issue policy",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{policy_url}}/api/v1/policies",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"insuranceCompanyId\": \"{{company_id}}\",\n  \"productId\": \"{{product_id}}\",\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"startDate\": \"2026-05-27\",\n  \"endDate\": \"2027-05-27\",\n  \"premiumAmount\": 1200,\n  \"annualLimit\": 5000\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('policy_id', json.id || '');"] } }]
+    },
+    {
+      "name": "17 Create premium payment",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{payment_url}}/api/v1/payments/policy-premium",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"policyId\": \"{{policy_id}}\",\n  \"insuranceCompanyId\": \"{{company_id}}\",\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"amount\": 1200\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('payment_id', json.id || '');"] } }]
+    },
+    {
+      "name": "18 Mock complete premium payment",
+      "request": {
+        "method": "POST",
+        "url": "{{payment_url}}/api/v1/payments/{{payment_id}}/complete-mock"
+      }
+    },
+    {
+      "name": "19 Create health record",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{health_url}}/api/v1/health-records",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"doctorProfileId\": \"{{doctor_profile_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"branchId\": \"{{branch_id}}\",\n  \"claimId\": null,\n  \"visitDate\": \"2026-05-27\",\n  \"visitType\": \"OUTPATIENT\",\n  \"recordType\": \"CONSULTATION\",\n  \"diagnosis\": \"J00\",\n  \"notes\": \"Demo visit\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('health_record_id', json.id || '');"] } }]
+    },
+    {
+      "name": "20 Initiate document upload",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}/documents/uploads",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claimId\": null,\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"documentType\": \"INVOICE\",\n  \"fileName\": \"invoice.pdf\",\n  \"fileSize\": 1024,\n  \"contentType\": \"application/pdf\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('document_id', json.documentId || json.id || '');"] } }]
+    },
+    {
+      "name": "21 Confirm document upload",
+      "request": {
+        "method": "PUT",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}/documents/{{document_id}}/confirm",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sha256Hash\": \"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\"\n}"
+        }
+      }
+    },
+    {
+      "name": "22 Create claim",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{claim_url}}/api/v1/claims",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"claimNumber\": \"CLM-DEMO-001\",\n  \"policyId\": \"{{policy_id}}\",\n  \"insuranceCompanyId\": \"{{company_id}}\",\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"doctorProfileId\": \"{{doctor_profile_id}}\",\n  \"serviceType\": \"CONSULTATION\",\n  \"treatmentDate\": \"2026-05-27\",\n  \"claimAmount\": 0,\n  \"coveredAmount\": 0,\n  \"patientPayAmount\": 0,\n  \"payoutRecipientType\": \"HOSPITAL\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('claim_id', json.id || '');"] } }]
+    },
+    {
+      "name": "23 Add claim item with document",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/items",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"description\": \"Consultation\",\n  \"serviceCode\": \"CONS-001\",\n  \"amount\": 100,\n  \"quantity\": 1,\n  \"serviceDate\": \"2026-05-27\",\n  \"documentId\": \"{{document_id}}\"\n}"
+        }
+      }
+    },
+    {
+      "name": "24 Submit claim",
+      "request": {
+        "method": "POST",
+        "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/submit"
+      }
+    },
+    {
+      "name": "25 Run fraud check",
+      "request": {
+        "method": "POST",
+        "url": "{{fraud_url}}/fraud/claims/{{claim_id}}/check"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('fraud_assessment_id', (json.assessment && json.assessment.id) || json.id || '');"] } }]
+    },
+    {
+      "name": "26 Run AI risk assessment",
+      "request": {
+        "method": "POST",
+        "url": "{{ai_risk_url}}/ai-risk/claims/{{claim_id}}/assess"
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('ai_assessment_id', json.id || '');"] } }]
+    },
+    {
+      "name": "27 Agent login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{iam_url}}/api/v1/iam/login/email",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"agent@saglamol.az\",\n  \"password\": \"Agent123!\"\n}"
+        }
+      },
+      "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "pm.collectionVariables.set('agent_token', json.accessToken || json.token || '');", "pm.collectionVariables.set('access_token', json.accessToken || json.token || '');"] } }]
+    },
+    {
+      "name": "28 Start review",
+      "request": {
+        "method": "POST",
+        "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/review/start"
+      }
+    },
+    {
+      "name": "29 Approve claim",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/review/approve",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"reason\": \"Approved after review\",\n  \"approvedAmount\": 80\n}"
+        }
+      }
+    },
+    {
+      "name": "30 Get claim after payout async flow",
+      "request": {
+        "method": "GET",
+        "url": "{{claim_url}}/api/v1/claims/{{claim_id}}"
+      }
+    },
+    {
+      "name": "31 Get my notifications",
+      "request": {
+        "method": "GET",
+        "url": "{{notification_url}}/notifications/my"
+      }
+    }
+  ]
+}

@@ -1,0 +1,654 @@
+{
+  "info": {
+    "name": "SaglamOL Services API",
+    "_postman_id": "6bce2b6b-1744-4d8c-aeb1-7cf9f8404b28",
+    "description": "Service-by-service SaglamOL API collection. Each service is separated into its own Postman folder for cleaner manual testing.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{access_token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "iam_url", "value": "http://localhost:8081" },
+    { "key": "profile_url", "value": "http://localhost:8082" },
+    { "key": "policy_url", "value": "http://localhost:8083" },
+    { "key": "claim_url", "value": "http://localhost:8084" },
+    { "key": "health_url", "value": "http://localhost:8085" },
+    { "key": "ai_risk_url", "value": "http://localhost:8086" },
+    { "key": "fraud_url", "value": "http://localhost:8087" },
+    { "key": "notification_url", "value": "http://localhost:8088" },
+    { "key": "payment_url", "value": "http://localhost:8089" },
+    { "key": "access_token", "value": "" },
+    { "key": "refresh_token", "value": "" },
+    { "key": "internal_service_secret", "value": "change-me" },
+    { "key": "patient_user_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "iam_user_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "patient_profile_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "doctor_profile_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "agent_profile_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "company_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "hospital_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "branch_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "staff_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "product_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "rule_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "policy_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "contract_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "claim_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "health_record_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "document_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "ai_assessment_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "fraud_assessment_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "notification_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "template_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "payment_id", "value": "00000000-0000-0000-0000-000000000000" },
+    { "key": "invoice_id", "value": "00000000-0000-0000-0000-000000000000" }
+  ],
+  "item": [
+    {
+      "name": "IAM Service",
+      "item": [
+        {
+          "name": "Auth",
+          "item": [
+            {
+              "name": "Register patient user",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/register",
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"patient@saglamol.az\",\n  \"phoneNumber\": \"+994501112233\",\n  \"password\": \"Patient123!\"\n}" }
+              }
+            },
+            {
+              "name": "Login by email",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/login/email",
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"admin@saglamol.az\",\n  \"password\": \"Admin123!\"\n}" }
+              },
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      "const json = pm.response.json();",
+                      "pm.collectionVariables.set('access_token', json.accessToken || json.token || '');",
+                      "pm.collectionVariables.set('refresh_token', json.refreshToken || '');"
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Login by phone",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/login/phone",
+                "body": { "mode": "raw", "raw": "{\n  \"phoneNumber\": \"+994501112233\",\n  \"password\": \"Patient123!\"\n}" }
+              }
+            },
+            {
+              "name": "Refresh token",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/refresh",
+                "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}" }
+              }
+            },
+            {
+              "name": "Current user",
+              "request": { "method": "GET", "url": "{{iam_url}}/api/v1/iam/me" }
+            }
+          ]
+        },
+        {
+          "name": "Password",
+          "item": [
+            {
+              "name": "Change password",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/password/change",
+                "body": { "mode": "raw", "raw": "{\n  \"currentPassword\": \"Old123!\",\n  \"newPassword\": \"New123!\"\n}" }
+              }
+            },
+            {
+              "name": "Request password reset",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/password/reset-request",
+                "body": { "mode": "raw", "raw": "{\n  \"email\": \"patient@saglamol.az\"\n}" }
+              }
+            },
+            {
+              "name": "Confirm password reset",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/password/reset-confirm",
+                "body": { "mode": "raw", "raw": "{\n  \"token\": \"reset-token\",\n  \"newPassword\": \"Patient123!\"\n}" }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Users",
+          "item": [
+            { "name": "List users", "request": { "method": "GET", "url": "{{iam_url}}/api/v1/iam/users?page=0&size=20" } },
+            { "name": "Get user", "request": { "method": "GET", "url": "{{iam_url}}/api/v1/iam/users/{{iam_user_id}}" } },
+            { "name": "Search users", "request": { "method": "GET", "url": "{{iam_url}}/api/v1/iam/users/search?query=admin" } },
+            {
+              "name": "Change user status",
+              "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/users/{{iam_user_id}}/status",
+                "body": { "mode": "raw", "raw": "{\n  \"status\": \"ACTIVE\"\n}" }
+              }
+            },
+            {
+              "name": "Assign role",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{iam_url}}/api/v1/iam/users/{{iam_user_id}}/roles",
+                "body": { "mode": "raw", "raw": "{\n  \"roleName\": \"AGENT\"\n}" }
+              }
+            },
+            { "name": "Remove role", "request": { "method": "DELETE", "url": "{{iam_url}}/api/v1/iam/users/{{iam_user_id}}/roles/AGENT" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "User Profile Service",
+      "item": [
+        {
+          "name": "Patients",
+          "item": [
+            {
+              "name": "Create patient profile",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{profile_url}}/api/v1/profiles/patients",
+                "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Ali\",\n  \"lastName\": \"Mammadov\",\n  \"birthDate\": \"1990-01-01\",\n  \"nationalId\": \"AZE12345678\"\n}" }
+              }
+            },
+            { "name": "My patient profile", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/patients/me" } },
+            { "name": "Get patient profile", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/patients/{{patient_profile_id}}" } },
+            { "name": "Search patients", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/patients/search?query=Ali&page=0&size=20" } }
+          ]
+        },
+        {
+          "name": "Doctors",
+          "item": [
+            {
+              "name": "Create doctor profile",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{profile_url}}/api/v1/profiles/doctors",
+                "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Leyla\",\n  \"lastName\": \"Aliyeva\",\n  \"specialty\": \"CARDIOLOGY\",\n  \"licenseNumber\": \"DOC-001\"\n}" }
+              }
+            },
+            { "name": "My doctor profile", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/doctors/me" } },
+            { "name": "Get doctor profile", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/doctors/{{doctor_profile_id}}" } },
+            { "name": "Search doctors", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/doctors/search?specialty=CARDIOLOGY&page=0&size=20" } }
+          ]
+        },
+        {
+          "name": "Agents",
+          "item": [
+            {
+              "name": "Create agent profile",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{profile_url}}/api/v1/profiles/agents",
+                "body": { "mode": "raw", "raw": "{\n  \"firstName\": \"Nigar\",\n  \"lastName\": \"Hasanova\",\n  \"licenseNumber\": \"AG-001\"\n}" }
+              }
+            },
+            { "name": "My agent profile", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/agents/me" } },
+            { "name": "Get agent profile", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/agents/{{agent_profile_id}}" } },
+            { "name": "Search agents", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/agents/search?companyId={{company_id}}&page=0&size=20" } },
+            { "name": "Link agent to company", "request": { "method": "PATCH", "url": "{{profile_url}}/api/v1/profiles/agents/{{agent_profile_id}}/insurance-company/{{company_id}}" } },
+            { "name": "Agents by company", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/agents/by-company/{{company_id}}?page=0&size=20" } }
+          ]
+        },
+        {
+          "name": "Hospitals",
+          "item": [
+            {
+              "name": "Create hospital",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{profile_url}}/api/v1/profiles/hospitals",
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Saglam Hospital\",\n  \"taxNumber\": \"1200000001\",\n  \"email\": \"hospital@saglamol.az\",\n  \"phone\": \"+994501234567\"\n}" }
+              }
+            },
+            { "name": "List hospitals", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/hospitals?page=0&size=20" } },
+            { "name": "Get hospital", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/hospitals/{{hospital_id}}" } },
+            { "name": "Change hospital status", "request": { "method": "PATCH", "url": "{{profile_url}}/api/v1/profiles/hospitals/{{hospital_id}}/status?newStatus=ACTIVE" } },
+            {
+              "name": "Create hospital branch",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{profile_url}}/api/v1/profiles/hospitals/{{hospital_id}}/branches",
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Main Branch\",\n  \"phone\": \"+994501234568\"\n}" }
+              }
+            },
+            { "name": "List hospital branches", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/hospitals/{{hospital_id}}/branches?page=0&size=20" } },
+            { "name": "Assign doctor to hospital", "request": { "method": "POST", "url": "{{profile_url}}/api/v1/profiles/hospitals/{{hospital_id}}/doctors/{{doctor_profile_id}}" } },
+            { "name": "List hospital doctors", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/profiles/hospitals/{{hospital_id}}/doctors?page=0&size=20" } }
+          ]
+        },
+        {
+          "name": "Insurance Companies",
+          "item": [
+            {
+              "name": "Create insurance company",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{profile_url}}/api/v1/insurance-companies",
+                "body": { "mode": "raw", "raw": "{\n  \"name\": \"Saglam Insurance\",\n  \"taxNumber\": \"9900000001\",\n  \"email\": \"office@saglam-insurance.az\",\n  \"phone\": \"+994501112233\"\n}" }
+              }
+            },
+            { "name": "List insurance companies", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/insurance-companies?page=0&size=20" } },
+            { "name": "Get insurance company", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/insurance-companies/{{company_id}}" } },
+            { "name": "Change insurance company status", "request": { "method": "PATCH", "url": "{{profile_url}}/api/v1/insurance-companies/{{company_id}}/status?newStatus=ACTIVE" } },
+            {
+              "name": "Create company staff",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{profile_url}}/api/v1/insurance-companies/{{company_id}}/staff",
+                "body": { "mode": "raw", "raw": "{\n  \"iamUserId\": \"{{iam_user_id}}\",\n  \"position\": \"MANAGER\"\n}" }
+              }
+            },
+            { "name": "List company staff", "request": { "method": "GET", "url": "{{profile_url}}/api/v1/insurance-companies/{{company_id}}/staff?page=0&size=20" } }
+          ]
+        },
+        {
+          "name": "Internal",
+          "item": [
+            { "name": "Insurance company active", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{profile_url}}/internal/v1/insurance-companies/{{company_id}}/exists-active" } },
+            { "name": "User insurance scope", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{profile_url}}/internal/v1/users/{{iam_user_id}}/insurance-scope" } },
+            { "name": "User profile summary", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{profile_url}}/internal/v1/profiles/users/{{iam_user_id}}/summary" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Policy Service",
+      "item": [
+        {
+          "name": "Products",
+          "item": [
+            {
+              "name": "Create product",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{policy_url}}/api/v1/insurance-products",
+                "body": { "mode": "raw", "raw": "{\n  \"companyId\": \"{{company_id}}\",\n  \"name\": \"Basic Health\",\n  \"description\": \"Basic health insurance\"\n}" }
+              }
+            },
+            { "name": "List products", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/insurance-products?companyId={{company_id}}&page=0&size=20" } },
+            { "name": "Get product", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/insurance-products/{{product_id}}" } },
+            { "name": "Change product status", "request": { "method": "PATCH", "url": "{{policy_url}}/api/v1/insurance-products/{{product_id}}/status?newStatus=ACTIVE" } }
+          ]
+        },
+        {
+          "name": "Coverage Rules",
+          "item": [
+            {
+              "name": "Create coverage rule",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{policy_url}}/api/v1/insurance-products/{{product_id}}/coverage-rules",
+                "body": { "mode": "raw", "raw": "{\n  \"coverageType\": \"GENERAL\",\n  \"annualLimit\": 1000,\n  \"copayPercent\": 10\n}" }
+              }
+            },
+            { "name": "List coverage rules", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/insurance-products/{{product_id}}/coverage-rules?page=0&size=20" } },
+            { "name": "Change coverage rule status", "request": { "method": "PATCH", "url": "{{policy_url}}/api/v1/insurance-products/{{product_id}}/coverage-rules/{{rule_id}}/status?newStatus=ACTIVE" } }
+          ]
+        },
+        {
+          "name": "Policies",
+          "item": [
+            {
+              "name": "Issue policy",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{policy_url}}/api/v1/policies",
+                "body": { "mode": "raw", "raw": "{\n  \"productId\": \"{{product_id}}\",\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-12-31\"\n}" }
+              }
+            },
+            { "name": "Get policy", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/policies/{{policy_id}}" } },
+            { "name": "My policies", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/policies/me?page=0&size=20" } },
+            { "name": "Search policies", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/policies?companyId={{company_id}}&page=0&size=20" } },
+            {
+              "name": "Eligibility check",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{policy_url}}/api/v1/policies/eligibility-check",
+                "body": { "mode": "raw", "raw": "{\n  \"policyId\": \"{{policy_id}}\",\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"coverageType\": \"GENERAL\",\n  \"amount\": 100\n}" }
+              }
+            },
+            { "name": "Cancel policy", "request": { "method": "PATCH", "url": "{{policy_url}}/api/v1/policies/{{policy_id}}/cancel?reason=test" } },
+            { "name": "Suspend policy", "request": { "method": "PATCH", "url": "{{policy_url}}/api/v1/policies/{{policy_id}}/suspend?reason=test" } }
+          ]
+        },
+        {
+          "name": "Provider Contracts",
+          "item": [
+            {
+              "name": "Create provider contract",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{policy_url}}/api/v1/provider-contracts",
+                "body": { "mode": "raw", "raw": "{\n  \"companyId\": \"{{company_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-12-31\"\n}" }
+              }
+            },
+            { "name": "Get provider contract", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/provider-contracts/{{contract_id}}" } },
+            { "name": "Contracts by company", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/provider-contracts/by-company/{{company_id}}?page=0&size=20" } },
+            { "name": "Contracts by hospital", "request": { "method": "GET", "url": "{{policy_url}}/api/v1/provider-contracts/by-hospital/{{hospital_id}}?page=0&size=20" } },
+            { "name": "Terminate contract", "request": { "method": "PATCH", "url": "{{policy_url}}/api/v1/provider-contracts/{{contract_id}}/terminate?reason=test" } }
+          ]
+        },
+        {
+          "name": "Internal",
+          "item": [
+            { "name": "Internal get policy", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{policy_url}}/internal/v1/policies/{{policy_id}}" } },
+            { "name": "Internal active policy", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{policy_url}}/internal/v1/policies/{{policy_id}}/active" } },
+            {
+              "name": "Internal eligibility check",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }],
+                "url": "{{policy_url}}/internal/v1/policies/eligibility-check",
+                "body": { "mode": "raw", "raw": "{\n  \"policyId\": \"{{policy_id}}\",\n  \"coverageType\": \"GENERAL\",\n  \"amount\": 100\n}" }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Claim Service",
+      "item": [
+        {
+          "name": "Claims",
+          "item": [
+            {
+              "name": "Create draft claim",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{claim_url}}/api/v1/claims",
+                "body": { "mode": "raw", "raw": "{\n  \"policyId\": \"{{policy_id}}\",\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"serviceDate\": \"2026-01-15\"\n}" }
+              }
+            },
+            {
+              "name": "Add claim item",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/items",
+                "body": { "mode": "raw", "raw": "{\n  \"description\": \"Consultation\",\n  \"amount\": 100,\n  \"coverageType\": \"GENERAL\"\n}" }
+              }
+            },
+            {
+              "name": "Attach document",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/documents",
+                "body": { "mode": "raw", "raw": "{\n  \"documentId\": \"{{document_id}}\"\n}" }
+              }
+            },
+            { "name": "Submit claim", "request": { "method": "POST", "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/submit" } },
+            { "name": "Get claim", "request": { "method": "GET", "url": "{{claim_url}}/api/v1/claims/{{claim_id}}" } },
+            { "name": "My claims", "request": { "method": "GET", "url": "{{claim_url}}/api/v1/claims/my?page=0&size=20" } },
+            { "name": "Search claims", "request": { "method": "GET", "url": "{{claim_url}}/api/v1/claims?companyId={{company_id}}&status=SUBMITTED&page=0&size=20" } }
+          ]
+        },
+        {
+          "name": "Review",
+          "item": [
+            { "name": "Start review", "request": { "method": "POST", "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/review/start" } },
+            { "name": "Request more documents", "request": { "method": "POST", "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/review/more-documents?reason=Missing%20invoice" } },
+            {
+              "name": "Approve claim",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/review/approve",
+                "body": { "mode": "raw", "raw": "{\n  \"note\": \"Approved for payment\"\n}" }
+              }
+            },
+            {
+              "name": "Reject claim",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/review/reject",
+                "body": { "mode": "raw", "raw": "{\n  \"note\": \"Rejected for test\"\n}" }
+              }
+            },
+            { "name": "Cancel claim", "request": { "method": "PUT", "url": "{{claim_url}}/api/v1/claims/{{claim_id}}/review/cancel?reason=test" } }
+          ]
+        },
+        {
+          "name": "Internal",
+          "item": [
+            { "name": "Internal get claim", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{claim_url}}/internal/v1/claims/{{claim_id}}" } },
+            { "name": "Internal claim summary", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{claim_url}}/internal/v1/claims/{{claim_id}}/summary" } },
+            { "name": "Internal by patient", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{claim_url}}/internal/v1/claims/by-patient/{{patient_profile_id}}/summary?page=0&size=20" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Health Record Service",
+      "item": [
+        {
+          "name": "Health Records",
+          "item": [
+            {
+              "name": "Create health record",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{health_url}}/api/v1/health-records",
+                "body": { "mode": "raw", "raw": "{\n  \"patientProfileId\": \"{{patient_profile_id}}\",\n  \"doctorProfileId\": \"{{doctor_profile_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"claimId\": \"{{claim_id}}\",\n  \"diagnosis\": \"Test diagnosis\"\n}" }
+              }
+            },
+            { "name": "My health records", "request": { "method": "GET", "url": "{{health_url}}/api/v1/health-records/my?page=0&size=20" } },
+            { "name": "Get health record", "request": { "method": "GET", "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}" } },
+            { "name": "Health records by claim", "request": { "method": "GET", "url": "{{health_url}}/api/v1/health-records/by-claim/{{claim_id}}?page=0&size=20" } },
+            {
+              "name": "Add treatment",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}/treatments",
+                "body": { "mode": "raw", "raw": "{\n  \"description\": \"Consultation\",\n  \"treatmentDate\": \"2026-01-15\"\n}" }
+              }
+            },
+            { "name": "Archive health record", "request": { "method": "PATCH", "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}/archive" } }
+          ]
+        },
+        {
+          "name": "Documents",
+          "item": [
+            {
+              "name": "Initiate upload",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}/documents/uploads",
+                "body": { "mode": "raw", "raw": "{\n  \"fileName\": \"invoice.pdf\",\n  \"contentType\": \"application/pdf\",\n  \"sizeBytes\": 1024\n}" }
+              }
+            },
+            {
+              "name": "Confirm upload",
+              "request": {
+                "method": "PUT",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}/documents/{{document_id}}/confirm",
+                "body": { "mode": "raw", "raw": "{\n  \"sha256Hash\": \"replace-with-sha256\"\n}" }
+              }
+            },
+            { "name": "Get document", "request": { "method": "GET", "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}/documents/{{document_id}}" } },
+            { "name": "Delete document", "request": { "method": "DELETE", "url": "{{health_url}}/api/v1/health-records/{{health_record_id}}/documents/{{document_id}}" } }
+          ]
+        },
+        {
+          "name": "Internal",
+          "item": [
+            {
+              "name": "Document hash batch",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }, { "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }],
+                "url": "{{health_url}}/internal/v1/documents/hash/batch",
+                "body": { "mode": "raw", "raw": "{\n  \"documentIds\": [\"{{document_id}}\"]\n}" }
+              }
+            },
+            { "name": "Document hash", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{health_url}}/internal/v1/health-records/documents/{{document_id}}/hash" } },
+            { "name": "Documents by claim", "request": { "method": "GET", "header": [{ "key": "X-Internal-Service-Secret", "value": "{{internal_service_secret}}" }], "url": "{{health_url}}/internal/v1/health-records/documents/by-claim/{{claim_id}}" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "AI Risk Service",
+      "item": [
+        { "name": "Assess claim", "request": { "method": "POST", "url": "{{ai_risk_url}}/ai-risk/claims/{{claim_id}}/assess" } },
+        { "name": "Latest by claim", "request": { "method": "GET", "url": "{{ai_risk_url}}/ai-risk/claims/{{claim_id}}" } },
+        { "name": "Assessment by ID", "request": { "method": "GET", "url": "{{ai_risk_url}}/ai-risk/assessments/{{ai_assessment_id}}" } },
+        { "name": "Company summary", "request": { "method": "GET", "url": "{{ai_risk_url}}/ai-risk/companies/{{company_id}}/summary" } }
+      ]
+    },
+    {
+      "name": "Fraud Detection Service",
+      "item": [
+        { "name": "Check claim", "request": { "method": "POST", "url": "{{fraud_url}}/fraud/claims/{{claim_id}}/check" } },
+        { "name": "Latest by claim", "request": { "method": "GET", "url": "{{fraud_url}}/fraud/claims/{{claim_id}}" } },
+        { "name": "Assessment by ID", "request": { "method": "GET", "url": "{{fraud_url}}/fraud/assessments/{{fraud_assessment_id}}" } },
+        { "name": "Company summary", "request": { "method": "GET", "url": "{{fraud_url}}/fraud/companies/{{company_id}}/summary" } },
+        { "name": "Hospital summary", "request": { "method": "GET", "url": "{{fraud_url}}/fraud/hospitals/{{hospital_id}}/summary" } }
+      ]
+    },
+    {
+      "name": "Notification Service",
+      "item": [
+        {
+          "name": "Send notification",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{notification_url}}/notifications/send",
+            "body": { "mode": "raw", "raw": "{\n  \"userId\": \"{{patient_user_id}}\",\n  \"companyId\": \"{{company_id}}\",\n  \"type\": \"EMAIL\",\n  \"subject\": \"Test\",\n  \"message\": \"Test notification\"\n}" }
+          }
+        },
+        { "name": "Get notification", "request": { "method": "GET", "url": "{{notification_url}}/notifications/{{notification_id}}" } },
+        { "name": "My notifications", "request": { "method": "GET", "url": "{{notification_url}}/notifications/my?page=0&size=20" } },
+        { "name": "Notifications by user", "request": { "method": "GET", "url": "{{notification_url}}/notifications/by-user/{{patient_user_id}}?page=0&size=20" } },
+        { "name": "Notifications by company", "request": { "method": "GET", "url": "{{notification_url}}/notifications/by-company/{{company_id}}?page=0&size=20" } },
+        {
+          "name": "Create template",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{notification_url}}/notifications/templates",
+            "body": { "mode": "raw", "raw": "{\n  \"code\": \"CLAIM_APPROVED\",\n  \"subject\": \"Claim approved\",\n  \"body\": \"Your claim is approved\"\n}" }
+          }
+        },
+        { "name": "List templates", "request": { "method": "GET", "url": "{{notification_url}}/notifications/templates?page=0&size=20" } },
+        { "name": "Change template status", "request": { "method": "PATCH", "url": "{{notification_url}}/notifications/templates/{{template_id}}/status?newStatus=ACTIVE" } }
+      ]
+    },
+    {
+      "name": "Payment Service",
+      "item": [
+        {
+          "name": "Payments",
+          "item": [
+            {
+              "name": "Create policy premium payment",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{payment_url}}/api/v1/payments/policy-premium",
+                "body": { "mode": "raw", "raw": "{\n  \"policyId\": \"{{policy_id}}\",\n  \"amount\": 100,\n  \"currency\": \"AZN\"\n}" }
+              }
+            },
+            {
+              "name": "Create claim payout",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{payment_url}}/api/v1/payments/claim-payout",
+                "body": { "mode": "raw", "raw": "{\n  \"claimId\": \"{{claim_id}}\",\n  \"amount\": 100,\n  \"currency\": \"AZN\"\n}" }
+              }
+            },
+            { "name": "Complete mock payment", "request": { "method": "POST", "url": "{{payment_url}}/api/v1/payments/{{payment_id}}/complete-mock" } },
+            {
+              "name": "Fail mock payment",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{payment_url}}/api/v1/payments/{{payment_id}}/fail-mock",
+                "body": { "mode": "raw", "raw": "{\n  \"reason\": \"test failure\"\n}" }
+              }
+            },
+            { "name": "Refund mock payment", "request": { "method": "POST", "url": "{{payment_url}}/api/v1/payments/{{payment_id}}/refund-mock" } },
+            { "name": "Get payment", "request": { "method": "GET", "url": "{{payment_url}}/api/v1/payments/{{payment_id}}" } },
+            { "name": "My payments", "request": { "method": "GET", "url": "{{payment_url}}/api/v1/payments/my?page=0&size=20" } },
+            { "name": "Payments by policy", "request": { "method": "GET", "url": "{{payment_url}}/api/v1/payments/by-policy?policyId={{policy_id}}&page=0&size=20" } },
+            { "name": "Payments by claim", "request": { "method": "GET", "url": "{{payment_url}}/api/v1/payments/by-claim?claimId={{claim_id}}&page=0&size=20" } }
+          ]
+        },
+        {
+          "name": "Invoices",
+          "item": [
+            {
+              "name": "Create invoice",
+              "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "url": "{{payment_url}}/api/v1/invoices",
+                "body": { "mode": "raw", "raw": "{\n  \"companyId\": \"{{company_id}}\",\n  \"hospitalId\": \"{{hospital_id}}\",\n  \"amount\": 100,\n  \"currency\": \"AZN\"\n}" }
+              }
+            },
+            { "name": "Get invoice", "request": { "method": "GET", "url": "{{payment_url}}/api/v1/invoices/{{invoice_id}}" } },
+            { "name": "Invoices by company", "request": { "method": "GET", "url": "{{payment_url}}/api/v1/invoices/by-company?companyId={{company_id}}&page=0&size=20" } },
+            { "name": "Invoices by hospital", "request": { "method": "GET", "url": "{{payment_url}}/api/v1/invoices/by-hospital?hospitalId={{hospital_id}}&page=0&size=20" } },
+            { "name": "Issue invoice", "request": { "method": "POST", "url": "{{payment_url}}/api/v1/invoices/{{invoice_id}}/issue" } },
+            { "name": "Mark invoice paid", "request": { "method": "POST", "url": "{{payment_url}}/api/v1/invoices/{{invoice_id}}/mark-paid" } },
+            { "name": "Cancel invoice", "request": { "method": "POST", "url": "{{payment_url}}/api/v1/invoices/{{invoice_id}}/cancel" } }
+          ]
+        }
+      ]
+    }
+  ]
+}

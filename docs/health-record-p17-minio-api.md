@@ -13,7 +13,7 @@ minio:
 saglamol:
   security:
     internal-auth:
-      secret: dev-internal-secret
+      secret: <set-INTERNAL_SERVICE_SECRET>
 
 outbox:
   topic: health-record.events

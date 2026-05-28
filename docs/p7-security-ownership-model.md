@@ -97,7 +97,7 @@ Endpoint-lər:
 Internal endpoint-lər `X-Internal-Service-Secret` header-i tələb edir.
 
 ```http
-X-Internal-Service-Secret: dev-internal-secret
+X-Internal-Service-Secret: <set-INTERNAL_SERVICE_SECRET>
 ```
 
 Secret config-dən oxunur:
@@ -106,7 +106,7 @@ Secret config-dən oxunur:
 saglamol:
   security:
     internal-auth:
-      secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
+      secret: ${INTERNAL_SERVICE_SECRET}
 ```
 
 Missing və ya invalid secret üçün cavab:
