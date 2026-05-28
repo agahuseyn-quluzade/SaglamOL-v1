@@ -1,6 +1,10 @@
 spring:
   application:
     name: claim-service
+  data:
+    web:
+      pageable:
+        max-page-size: ${MAX_PAGE_SIZE:100}
   profiles:
     active: ${SPRING_PROFILES_ACTIVE:local}
   config:
@@ -28,7 +32,7 @@ claim:
 saglamol:
   security:
     internal-auth:
-      secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
+      secret: ${INTERNAL_SERVICE_SECRET}
 
 outbox:
   topic: ${CLAIM_OUTBOX_TOPIC:claim.events}
@@ -37,11 +41,17 @@ outbox:
     enabled: ${OUTBOX_SCHEDULER_ENABLED:true}
     interval: ${OUTBOX_SCHEDULER_INTERVAL:5000}
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        include: health,info,metrics,prometheus
   endpoint:
     health:
       probes:

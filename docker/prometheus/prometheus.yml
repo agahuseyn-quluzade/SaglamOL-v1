@@ -1,0 +1,64 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: api-gateway
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["api-gateway:8080"]
+
+  - job_name: iam-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["iam-service:8081"]
+
+  - job_name: user-profile-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["user-profile-service:8082"]
+
+  - job_name: policy-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["policy-service:8083"]
+
+  - job_name: claim-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["claim-service:8084"]
+
+  - job_name: health-record-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["health-record-service:8085"]
+
+  - job_name: ai-risk-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["ai-risk-service:8086"]
+
+  - job_name: fraud-detection-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["fraud-detection-service:8087"]
+
+  - job_name: notification-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["notification-service:8088"]
+
+  - job_name: payment-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["payment-service:8089"]
+
+  - job_name: discovery-server
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["discovery-server:8761"]
+
+  - job_name: config-server
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["config-server:8888"]

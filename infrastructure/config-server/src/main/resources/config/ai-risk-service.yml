@@ -14,6 +14,7 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:/db/changelog/db.changelog-master.xml
+    contexts: ${LIQUIBASE_CONTEXTS:prod}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
@@ -33,7 +34,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,metrics,prometheus
 
 logging:
   pattern:
@@ -43,4 +44,4 @@ saglamol:
   security:
     internal-auth:
       enabled: true
-      secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
+      secret: ${INTERNAL_SERVICE_SECRET}

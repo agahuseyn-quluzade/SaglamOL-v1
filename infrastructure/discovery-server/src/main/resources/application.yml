@@ -6,6 +6,10 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   application:
     name: discovery-server
+  data:
+    web:
+      pageable:
+        max-page-size: ${MAX_PAGE_SIZE:100}
 
 eureka:
   client:
@@ -16,4 +20,4 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,metrics,prometheus

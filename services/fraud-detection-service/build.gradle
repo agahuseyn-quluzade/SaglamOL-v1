@@ -5,6 +5,7 @@ dependencies {
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation 'org.liquibase:liquibase-core'
+    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     implementation "org.mapstruct:mapstruct:${rootProject.ext.mapstructVersion}"
     annotationProcessor "org.mapstruct:mapstruct-processor:${rootProject.ext.mapstructVersion}"
     runtimeOnly 'org.postgresql:postgresql'

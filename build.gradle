@@ -51,6 +51,8 @@ subprojects {
 
     tasks.named('test') {
         useJUnitPlatform()
+        systemProperty 'IAM_JWT_SECRET', System.getenv('IAM_JWT_SECRET') ?: 'test-jwt-secret-contains-at-least-32-characters'
+        systemProperty 'INTERNAL_SERVICE_SECRET', System.getenv('INTERNAL_SERVICE_SECRET') ?: 'test-internal-service-secret'
     }
 }
 
@@ -64,7 +66,12 @@ configure(subprojects.findAll { it.path.startsWith(':infrastructure:') || it.pat
     dependencies {
         implementation 'org.springframework.boot:spring-boot-starter-actuator'
         implementation 'org.springframework.boot:spring-boot-starter-validation'
+        runtimeOnly 'io.micrometer:micrometer-registry-prometheus'
         testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testImplementation 'org.testcontainers:testcontainers'
+        testImplementation 'org.testcontainers:junit-jupiter'
+        testImplementation 'org.testcontainers:postgresql'
+        testImplementation 'org.testcontainers:kafka'
     }
 }
 

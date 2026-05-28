@@ -11,6 +11,7 @@ x-java-container: &java-container
 
 x-java-environment: &java-environment
   JAVA_TOOL_OPTIONS: "-XX:MaxRAM=384m -XX:InitialRAMPercentage=10 -Djava.security.egd=file:/dev/./urandom"
+  LIQUIBASE_CONTEXTS: ${LIQUIBASE_CONTEXTS:-local}
 
 services:
   postgres:
@@ -92,7 +93,7 @@ services:
       <<: *java-environment
       SPRING_PROFILES_ACTIVE: local
       EUREKA_DEFAULT_ZONE: http://discovery-server:8761/eureka/
-      IAM_JWT_SECRET: ${IAM_JWT_SECRET:-dev-local-secret-change-me-dev-local-secret-change-me}
+      IAM_JWT_SECRET: ${IAM_JWT_SECRET:?Set IAM_JWT_SECRET in .env}
     depends_on:
       discovery-server:
         condition: service_healthy
@@ -122,7 +123,7 @@ services:
       IAM_DB_URL: jdbc:postgresql://postgres:5432/iam_db
       IAM_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       IAM_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      IAM_JWT_SECRET: ${IAM_JWT_SECRET:-dev-local-secret-change-me-dev-local-secret-change-me}
+      IAM_JWT_SECRET: ${IAM_JWT_SECRET:?Set IAM_JWT_SECRET in .env}
       KAFKA_BOOTSTRAP_SERVERS: kafka:29092
     depends_on:
       postgres:
@@ -156,7 +157,7 @@ services:
       USER_DB_URL: jdbc:postgresql://postgres:5432/user_db
       USER_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       USER_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?Set INTERNAL_SERVICE_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -190,7 +191,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
       REDIS_HOST: ${REDIS_HOST:-redis}
       REDIS_PORT: ${REDIS_PORT:-6379}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?Set INTERNAL_SERVICE_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -226,7 +227,7 @@ services:
       CLAIM_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       CLAIM_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?Set INTERNAL_SERVICE_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -263,8 +264,11 @@ services:
       MINIO_ENDPOINT: ${MINIO_ENDPOINT:-http://minio:9000}
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin}
-      MINIO_BUCKET: ${MINIO_BUCKET:-saglamol-documents}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET: ${MINIO_BUCKET:-medical-documents}
+      MINIO_MEDICAL_DOCUMENTS_BUCKET: ${MINIO_MEDICAL_DOCUMENTS_BUCKET:-medical-documents}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?Set INTERNAL_SERVICE_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -304,7 +308,7 @@ services:
       AI_BASE_URL: ${AI_BASE_URL:-https://api.openai.com/v1}
       AI_MODEL: ${AI_MODEL:-gpt-4o-mini}
       AI_TIMEOUT_SECONDS: ${AI_TIMEOUT_SECONDS:-10}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?Set INTERNAL_SERVICE_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -338,7 +342,7 @@ services:
       FRAUD_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       FRAUD_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?Set INTERNAL_SERVICE_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -372,7 +376,7 @@ services:
       NOTIFICATION_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       NOTIFICATION_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?Set INTERNAL_SERVICE_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -406,7 +410,7 @@ services:
       PAYMENT_DB_USERNAME: ${POSTGRES_USER:-saglamol}
       PAYMENT_DB_PASSWORD: ${POSTGRES_PASSWORD:-saglamol}
       KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:-dev-internal-secret}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET:?Set INTERNAL_SERVICE_SECRET in .env}
     depends_on:
       postgres:
         condition: service_healthy
@@ -470,8 +474,9 @@ services:
     healthcheck:
       test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
       interval: 15s
-      timeout: 10s
-      retries: 10
+      timeout: 60s
+      retries: 20
+      start_period: 180s
     networks:
       - saglamol-network
 
@@ -494,9 +499,40 @@ services:
     networks:
       - saglamol-network
 
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=3d"
+    depends_on:
+      discovery-server:
+        condition: service_healthy
+    networks:
+      - saglamol-network
+
+  grafana:
+    image: grafana/grafana:11.3.1
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - saglamol-network
+
 volumes:
   postgres-data:
   minio-data:
+  grafana-data:
 
 networks:
   saglamol-network:

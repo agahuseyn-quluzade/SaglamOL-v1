@@ -6,6 +6,10 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:local}
   application:
     name: iam-service
+  data:
+    web:
+      pageable:
+        max-page-size: ${MAX_PAGE_SIZE:100}
   datasource:
     url: ${IAM_DB_URL:jdbc:postgresql://localhost:5432/iam_db}
     username: ${IAM_DB_USERNAME:saglamol}
@@ -16,6 +20,7 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:/db/changelog/db.changelog-master.xml
+    contexts: ${LIQUIBASE_CONTEXTS:prod}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
 
@@ -28,7 +33,7 @@ outbox:
 
 iam:
   jwt:
-    secret: ${IAM_JWT_SECRET:dev-local-secret-change-me-dev-local-secret-change-me}
+    secret: ${IAM_JWT_SECRET}
     access-token-minutes: ${IAM_ACCESS_TOKEN_MINUTES:15}
   refresh-token:
     days-to-live: ${IAM_REFRESH_TOKEN_DAYS_TO_LIVE:30}
@@ -38,8 +43,14 @@ eureka:
     service-url:
       defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
 
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /api-docs
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info,prometheus
+        include: health,info,metrics,prometheus
