@@ -338,5 +338,101 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="demo-001-seed-local-business-profile-data" author="codex" context="local">
+        <sql>
+            INSERT INTO insurance_companies (
+                id, name, tax_id, license_number, email, phone, address_country, address_city,
+                address_district, address_street, address_postal_code, status, created_at, updated_at
+            ) VALUES (
+                '20000000-0000-0000-0000-000000000001', 'SaglamOL Demo Insurance', 'DEMO-TAX-001',
+                'DEMO-INS-LIC-001', 'demo-insurance@saglamol.az', '+994124000001', 'Azerbaijan',
+                'Baku', 'Nasimi', 'Demo Insurance Street 1', 'AZ1000', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (tax_id) DO NOTHING;
+
+            INSERT INTO hospital (
+                id, name, tax_id, license_no, phone, email, status, created_at
+            ) VALUES (
+                '30000000-0000-0000-0000-000000000001', 'SaglamOL Demo Hospital', 'DEMO-HOSP-TAX-001',
+                'DEMO-HOSP-LIC-001', '+994124000002', 'demo-hospital@saglamol.az', 'ACTIVE', CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (tax_id) DO NOTHING;
+
+            INSERT INTO hospital_branch (
+                id, hospital_id, name, city, address_line, phone, created_at
+            ) VALUES (
+                '30000000-0000-0000-0000-000000000002', '30000000-0000-0000-0000-000000000001',
+                'Main Branch', 'Baku', 'Demo Hospital Avenue 10', '+994124000003', CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (id) DO NOTHING;
+
+            INSERT INTO patient_profile (
+                id, user_id, first_name, last_name, date_of_birth, phone, created_at, gender, email,
+                national_id, address_country, address_city, address_district, address_street, address_postal_code,
+                emergency_contact_name, emergency_contact_phone, profile_status, updated_at
+            ) VALUES (
+                '40000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000005',
+                'Demo', 'Patient', DATE '1990-01-15', '+994501000005', CURRENT_TIMESTAMP, 'OTHER',
+                'patient@saglamol.az', 'DEMO-PATIENT-001', 'Azerbaijan', 'Baku', 'Nasimi',
+                'Patient Demo Street 5', 'AZ1000', 'Demo Contact', '+994501000099', 'ACTIVE', CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (user_id) DO NOTHING;
+
+            INSERT INTO doctor_profile (
+                id, user_id, license_no, hospital_id, specialty, created_at, first_name, last_name, phone,
+                email, address_country, address_city, address_district, address_street, address_postal_code,
+                profile_status, updated_at
+            ) VALUES (
+                '50000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000006',
+                'DEMO-DOC-LIC-001', '30000000-0000-0000-0000-000000000001', 'Cardiology',
+                CURRENT_TIMESTAMP, 'Demo', 'Doctor', '+994501000006', 'doctor@saglamol.az',
+                'Azerbaijan', 'Baku', 'Nasimi', 'Doctor Demo Street 6', 'AZ1000', 'ACTIVE', CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (user_id) DO NOTHING;
+
+            INSERT INTO agent_profile (
+                id, user_id, employee_no, department, created_at, first_name, last_name, phone, email,
+                profile_status, updated_at, insurance_company_id
+            ) VALUES (
+                '60000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000004',
+                'DEMO-AGENT-001', 'Retail Sales', CURRENT_TIMESTAMP, 'Demo', 'Agent',
+                '+994501000004', 'agent@saglamol.az', 'ACTIVE', CURRENT_TIMESTAMP,
+                '20000000-0000-0000-0000-000000000001'
+            )
+            ON CONFLICT (user_id) DO NOTHING;
+
+            INSERT INTO insurance_company_staff_profiles (
+                id, iam_user_id, insurance_company_id, role_type, position, employee_code, status, created_at, updated_at
+            ) VALUES
+                ('60000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000002',
+                 '20000000-0000-0000-0000-000000000001', 'INSURANCE_ADMIN', 'Demo Insurance Admin',
+                 'DEMO-INS-ADMIN-001', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('60000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003',
+                 '20000000-0000-0000-0000-000000000001', 'INSURANCE_STAFF', 'Demo Insurance Staff',
+                 'DEMO-INS-STAFF-001', 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (iam_user_id, insurance_company_id) DO NOTHING;
+
+            INSERT INTO hospital_staff_profile (
+                id, user_id, hospital_id, branch_id, position, created_at
+            ) VALUES
+                ('70000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000007',
+                 '30000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000002',
+                 'Hospital Admin', CURRENT_TIMESTAMP),
+                ('70000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000008',
+                 '30000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000002',
+                 'Front Desk Staff', CURRENT_TIMESTAMP)
+            ON CONFLICT (user_id) DO NOTHING;
+
+            INSERT INTO doctor_hospital_assignment (
+                id, doctor_profile_id, hospital_id, branch_id, department, is_primary, created_at
+            ) VALUES (
+                '70000000-0000-0000-0000-000000000003', '50000000-0000-0000-0000-000000000001',
+                '30000000-0000-0000-0000-000000000001', '30000000-0000-0000-0000-000000000002',
+                'Cardiology', TRUE, CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (doctor_profile_id, hospital_id) DO NOTHING;
+        </sql>
+    </changeSet>
+
     <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

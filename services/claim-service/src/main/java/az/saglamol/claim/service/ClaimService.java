@@ -35,7 +35,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 @Service
 public class ClaimService {
@@ -237,10 +239,20 @@ public class ClaimService {
                 claim.getDoctorProfileId(),
                 claim.getServiceType(),
                 claim.getClaimAmount(),
-                documentRepository.findByClaimId(claim.getId()).stream().map(ClaimDocumentReference::getDocumentId).toList(),
+                submittedDocumentIds(items, claim.getId()),
                 now
         ));
         return mapper.toResponse(saved);
+    }
+
+    private List<UUID> submittedDocumentIds(List<ClaimItem> items, UUID claimId) {
+        return Stream.concat(
+                        items.stream().map(ClaimItem::getDocumentId),
+                        documentRepository.findByClaimId(claimId).stream().map(ClaimDocumentReference::getDocumentId)
+                )
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
     }
 
     @Transactional(readOnly = true)

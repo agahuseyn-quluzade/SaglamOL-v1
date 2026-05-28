@@ -9,6 +9,10 @@ import az.saglamol.policy.dto.response.PolicyResponse;
 import az.saglamol.policy.entity.PolicyStatus;
 import az.saglamol.policy.service.EligibilityService;
 import az.saglamol.policy.service.PolicyService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +33,9 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/policies")
+@Tag(name = "Policies", description = "Policy issue, eligibility and lifecycle endpoints")
+@SecurityRequirement(name = "BearerAuth")
+@ApiResponse(responseCode = "200", description = "Successful policy operation")
 public class PolicyController {
 
     private final PolicyService policyService;
@@ -41,21 +48,25 @@ public class PolicyController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Issue policy")
     public PolicyResponse issuePolicy(@Valid @RequestBody IssuePolicyRequest request) {
         return policyService.issuePolicy(AuthContextHolder.getRequired(), request);
     }
 
     @GetMapping("/{policyId}")
+    @Operation(summary = "Get policy by ID")
     public PolicyResponse getPolicy(@PathVariable UUID policyId) {
         return policyService.getPolicy(policyId, AuthContextHolder.getRequired());
     }
 
     @GetMapping("/me")
+    @Operation(summary = "Get current patient's policies")
     public List<PolicyResponse> getMyPolicies() {
         return policyService.getMyPolicies(AuthContextHolder.getRequired());
     }
 
     @GetMapping
+    @Operation(summary = "Search policies")
     public Page<PolicyResponse> searchPolicies(
             @RequestParam(required = false) UUID companyId,
             @RequestParam(required = false) UUID patientProfileId,
@@ -66,6 +77,7 @@ public class PolicyController {
     }
 
     @PostMapping("/eligibility-check")
+    @Operation(summary = "Check policy eligibility")
     public EligibilityCheckResponse eligibilityCheck(@Valid @RequestBody EligibilityCheckRequest request) {
         return eligibilityService.checkEligibility(request);
     }

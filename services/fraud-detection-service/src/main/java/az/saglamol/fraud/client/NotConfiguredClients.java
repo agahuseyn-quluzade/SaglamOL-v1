@@ -45,6 +45,11 @@ class NotConfiguredHealthRecordInternalClient implements HealthRecordInternalCli
     public MedicalDocumentHashResponse documentHash(UUID documentId) {
         throw NotConfiguredClients.notConfigured("Health record internal client");
     }
+
+    @Override
+    public List<MedicalDocumentHashResponse> documentHashes(DocumentHashBatchRequest request) {
+        throw NotConfiguredClients.notConfigured("Health record internal client");
+    }
 }
 
 @Component

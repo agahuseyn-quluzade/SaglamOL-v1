@@ -16,7 +16,7 @@ public class InternalServiceSecretVerifier {
     private final String expectedSecret;
 
     public InternalServiceSecretVerifier(
-            @Value("${saglamol.security.internal-auth.secret:${INTERNAL_SERVICE_SECRET:dev-internal-secret}}") String expectedSecret
+            @Value("${saglamol.security.internal-auth.secret}") String expectedSecret
     ) {
         this.expectedSecret = expectedSecret;
     }

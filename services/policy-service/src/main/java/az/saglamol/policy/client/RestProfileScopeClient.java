@@ -20,7 +20,7 @@ public class RestProfileScopeClient implements ProfileScopeClient {
     public RestProfileScopeClient(
             RestClient.Builder restClientBuilder,
             @Value("${saglamol.clients.user-profile.base-url:http://localhost:8082}") String userProfileBaseUrl,
-            @Value("${saglamol.security.internal-auth.secret:${INTERNAL_SERVICE_SECRET:dev-internal-secret}}") String internalSecret
+            @Value("${saglamol.security.internal-auth.secret}") String internalSecret
     ) {
         this.restClient = restClientBuilder.baseUrl(userProfileBaseUrl).build();
         this.internalSecret = internalSecret;

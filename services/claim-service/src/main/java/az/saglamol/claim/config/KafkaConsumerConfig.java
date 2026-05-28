@@ -6,6 +6,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
+import org.springframework.boot.ssl.SslBundles;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -27,10 +29,16 @@ public class KafkaConsumerConfig {
     @Bean
     ConsumerFactory<String, EventEnvelope> claimConsumerFactory(
             KafkaProperties kafkaProperties,
+            ObjectProvider<SslBundles> sslBundles,
             ObjectMapper objectMapper
     ) {
-        Map<String, Object> properties = new HashMap<>(kafkaProperties.buildConsumerProperties());
+        Map<String, Object> properties = new HashMap<>(
+                kafkaProperties.buildConsumerProperties(sslBundles.getIfAvailable())
+        );
         properties.put(ConsumerConfig.GROUP_ID_CONFIG, kafkaProperties.getConsumer().getGroupId());
+        properties.remove(JsonDeserializer.TRUSTED_PACKAGES);
+        properties.remove(JsonDeserializer.VALUE_DEFAULT_TYPE);
+        properties.remove(JsonDeserializer.USE_TYPE_INFO_HEADERS);
         JsonDeserializer<EventEnvelope> valueDeserializer = new JsonDeserializer<>(EventEnvelope.class, objectMapper, false);
         valueDeserializer.addTrustedPackages("az.saglamol.common.events", "az.saglamol.common.events.*");
         valueDeserializer.setUseTypeHeaders(false);

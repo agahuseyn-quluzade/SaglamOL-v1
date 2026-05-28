@@ -68,5 +68,22 @@
         </sql>
     </changeSet>
 
+    <changeSet id="demo-001-seed-local-notification-templates" author="codex" context="local">
+        <sql>
+            INSERT INTO notification_templates(id, template_code, channel, subject_template, body_template, status, created_at) VALUES
+            ('00000000-0000-0000-0000-000000021001', 'PASSWORD_RESET', 'EMAIL', 'SaglamOL password reset', 'Use this link to reset your SaglamOL password: {{resetLink}}', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021002', 'POLICY_ACTIVATED', 'EMAIL', 'Policy activated', 'Your policy {{policyNumber}} is active.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021003', 'PAYMENT_COMPLETED', 'EMAIL', 'Payment completed', 'Payment {{paymentNumber}} for {{amount}} {{currency}} was completed.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021004', 'CLAIM_SUBMITTED', 'EMAIL', 'Claim submitted', 'Claim {{claimNumber}} was submitted and is pending review.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021005', 'CLAIM_APPROVED', 'EMAIL', 'Claim approved', 'Claim {{claimNumber}} was approved for {{approvedAmount}} {{currency}}.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021006', 'CLAIM_REJECTED', 'EMAIL', 'Claim rejected', 'Claim {{claimNumber}} was rejected. Reason: {{reason}}.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021101', 'POLICY_ACTIVATED', 'SMS', NULL, 'SaglamOL: policy {{policyNumber}} is active.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021102', 'PAYMENT_COMPLETED', 'SMS', NULL, 'SaglamOL: payment {{paymentNumber}} completed.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021103', 'CLAIM_APPROVED', 'SMS', NULL, 'SaglamOL: claim {{claimNumber}} approved.', 'ACTIVE', CURRENT_TIMESTAMP),
+            ('00000000-0000-0000-0000-000000021104', 'CLAIM_NEEDS_MORE_DOCUMENTS', 'SMS', NULL, 'SaglamOL: claim {{claimNumber}} needs more documents.', 'ACTIVE', CURRENT_TIMESTAMP)
+            ON CONFLICT (template_code, channel) DO NOTHING;
+        </sql>
+    </changeSet>
+
     <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

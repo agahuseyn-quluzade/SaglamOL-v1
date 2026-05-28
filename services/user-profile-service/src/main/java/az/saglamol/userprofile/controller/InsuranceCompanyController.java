@@ -10,6 +10,10 @@ import az.saglamol.userprofile.entity.InsuranceCompanyStaffStatus;
 import az.saglamol.userprofile.entity.InsuranceCompanyStatus;
 import az.saglamol.userprofile.service.InsuranceCompanyService;
 import az.saglamol.userprofile.service.InsuranceCompanyStaffService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +34,9 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/insurance-companies")
+@Tag(name = "Insurance Companies", description = "Insurance company and staff administration")
+@SecurityRequirement(name = "BearerAuth")
+@ApiResponse(responseCode = "200", description = "Successful insurance company operation")
 public class InsuranceCompanyController {
 
     private final InsuranceCompanyService companyService;
@@ -45,11 +52,13 @@ public class InsuranceCompanyController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create insurance company")
     public InsuranceCompanyResponse createCompany(@Valid @RequestBody CreateInsuranceCompanyRequest request) {
         return companyService.createCompany(AuthContextHolder.getRequired(), request);
     }
 
     @GetMapping
+    @Operation(summary = "List insurance companies")
     public Page<InsuranceCompanyResponse> companies(
             @RequestParam(required = false) InsuranceCompanyStatus status,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
@@ -71,6 +80,7 @@ public class InsuranceCompanyController {
     }
 
     @PatchMapping("/{id}/status")
+    @Operation(summary = "Change insurance company status")
     public InsuranceCompanyResponse changeStatus(
             @PathVariable UUID id,
             @RequestParam InsuranceCompanyStatus newStatus
@@ -80,6 +90,7 @@ public class InsuranceCompanyController {
 
     @PostMapping("/{companyId}/staff")
     @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Create insurance company staff")
     public InsuranceCompanyStaffResponse createStaff(
             @PathVariable UUID companyId,
             @Valid @RequestBody CreateInsuranceCompanyStaffRequest request

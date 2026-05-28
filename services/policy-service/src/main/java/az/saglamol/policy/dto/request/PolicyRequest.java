@@ -1,6 +1,7 @@
 package az.saglamol.policy.dto.request;
 
 import az.saglamol.policy.entity.PolicyStatus;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -24,4 +25,8 @@ public record PolicyRequest(
         @NotNull @DecimalMin("0.00") BigDecimal usedLimit,
         @NotNull @DecimalMin("0.00") BigDecimal reservedLimit
 ) {
+    @AssertTrue(message = "endDate must be on or after startDate")
+    public boolean isValidDateRange() {
+        return startDate == null || endDate == null || !endDate.isBefore(startDate);
+    }
 }

@@ -1,5 +1,6 @@
 package az.saglamol.healthrecord.dto.request;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -17,4 +18,8 @@ public record CreateTreatmentRequest(
         @DecimalMin("0.00") BigDecimal estimatedCost,
         @DecimalMin("0.00") BigDecimal actualCost
 ) {
+    @AssertTrue(message = "endDate must be on or after startDate")
+    public boolean isValidDateRange() {
+        return startDate == null || endDate == null || !endDate.isBefore(startDate);
+    }
 }

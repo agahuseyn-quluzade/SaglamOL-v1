@@ -13,7 +13,7 @@ public class FeignInternalClientConfig {
 
     @Bean
     RequestInterceptor internalHeadersRequestInterceptor(
-            @Value("${saglamol.security.internal-auth.secret:${INTERNAL_SERVICE_SECRET:dev-internal-secret}}") String internalSecret
+            @Value("${saglamol.security.internal-auth.secret}") String internalSecret
     ) {
         return template -> {
             template.header("X-Internal-Service-Secret", internalSecret);

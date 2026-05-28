@@ -167,5 +167,67 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="demo-001-seed-local-policy-data" author="codex" context="local">
+        <sql>
+            INSERT INTO insurance_products (
+                id, product_code, name, status, premium_amount, created_at, insurance_company_id,
+                description, coverage_type, annual_limit, currency, updated_at
+            ) VALUES (
+                '80000000-0000-0000-0000-000000000001', 'DEMO-HEALTH-PLUS', 'Demo Health Plus',
+                'ACTIVE', 49.90, CURRENT_TIMESTAMP, '20000000-0000-0000-0000-000000000001',
+                'Local demo plan with outpatient, inpatient and emergency coverage.', 'PREMIUM',
+                5000.00, 'AZN', CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (insurance_company_id, product_code) DO NOTHING;
+
+            INSERT INTO coverage_rules (
+                id, product_id, service_type, coverage_percent, max_amount, waiting_period_days,
+                requires_pre_approval, status, created_at, updated_at
+            ) VALUES
+                ('80000000-0000-0000-0000-000000000101', '80000000-0000-0000-0000-000000000001',
+                 'OUTPATIENT', 80, 1500.00, 0, FALSE, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('80000000-0000-0000-0000-000000000102', '80000000-0000-0000-0000-000000000001',
+                 'INPATIENT', 90, 3500.00, 14, TRUE, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+                ('80000000-0000-0000-0000-000000000103', '80000000-0000-0000-0000-000000000001',
+                 'EMERGENCY', 100, 1000.00, 0, FALSE, 'ACTIVE', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+            ON CONFLICT (id) DO NOTHING;
+
+            INSERT INTO provider_contracts (
+                id, insurance_company_id, hospital_id, product_id, contract_number, start_date,
+                end_date, status, payout_model, created_at, updated_at
+            ) VALUES (
+                '80000000-0000-0000-0000-000000000201', '20000000-0000-0000-0000-000000000001',
+                '30000000-0000-0000-0000-000000000001', '80000000-0000-0000-0000-000000000001',
+                'DEMO-CONTRACT-001', CURRENT_DATE - INTERVAL '30 days', CURRENT_DATE + INTERVAL '365 days',
+                'ACTIVE', 'DIRECT_BILLING', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+            )
+            ON CONFLICT (insurance_company_id, contract_number) DO NOTHING;
+
+            INSERT INTO policies (
+                id, patient_profile_id, product_id, status, start_date, end_date, created_at,
+                policy_number, insurance_company_id, agent_profile_id, premium_amount, annual_limit,
+                used_limit, reserved_limit, updated_at, version
+            ) VALUES (
+                '90000000-0000-0000-0000-000000000001', '40000000-0000-0000-0000-000000000001',
+                '80000000-0000-0000-0000-000000000001', 'ACTIVE', CURRENT_DATE - INTERVAL '20 days',
+                CURRENT_DATE + INTERVAL '345 days', CURRENT_TIMESTAMP, 'DEMO-POL-0001',
+                '20000000-0000-0000-0000-000000000001', '60000000-0000-0000-0000-000000000001',
+                49.90, 5000.00, 0.00, 0.00, CURRENT_TIMESTAMP, 0
+            )
+            ON CONFLICT (policy_number) DO NOTHING;
+
+            INSERT INTO policy_limit_usage (
+                id, policy_id, service_type, annual_limit, used_amount, reserved_amount, version
+            ) VALUES
+                ('90000000-0000-0000-0000-000000000101', '90000000-0000-0000-0000-000000000001',
+                 'OUTPATIENT', 1500.00, 0.00, 0.00, 0),
+                ('90000000-0000-0000-0000-000000000102', '90000000-0000-0000-0000-000000000001',
+                 'INPATIENT', 3500.00, 0.00, 0.00, 0),
+                ('90000000-0000-0000-0000-000000000103', '90000000-0000-0000-0000-000000000001',
+                 'EMERGENCY', 1000.00, 0.00, 0.00, 0)
+            ON CONFLICT (policy_id, service_type) DO NOTHING;
+        </sql>
+    </changeSet>
+
     <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

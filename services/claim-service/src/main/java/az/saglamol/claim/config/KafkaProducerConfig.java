@@ -1,7 +1,9 @@
 package az.saglamol.claim.config;
 
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
+import org.springframework.boot.ssl.SslBundles;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.core.DefaultKafkaProducerFactory;
@@ -15,8 +17,11 @@ import java.util.Map;
 public class KafkaProducerConfig {
 
     @Bean
-    ProducerFactory<String, Object> claimProducerFactory(KafkaProperties kafkaProperties) {
-        Map<String, Object> properties = kafkaProperties.buildProducerProperties();
+    ProducerFactory<String, Object> claimProducerFactory(
+            KafkaProperties kafkaProperties,
+            ObjectProvider<SslBundles> sslBundles
+    ) {
+        Map<String, Object> properties = kafkaProperties.buildProducerProperties(sslBundles.getIfAvailable());
         return new DefaultKafkaProducerFactory<>(properties, new StringSerializer(), new JsonSerializer<>());
     }
 

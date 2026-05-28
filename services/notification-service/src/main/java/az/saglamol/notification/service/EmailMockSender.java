@@ -19,6 +19,17 @@ public class EmailMockSender implements NotificationSender {
     @Override
     public void send(Notification notification) {
         log.info("Mock email notification id={} to={} subject={}",
-                notification.getId(), notification.getRecipientEmail(), notification.getSubject());
+                notification.getId(), maskEmail(notification.getRecipientEmail()), notification.getSubject());
+    }
+
+    private String maskEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return null;
+        }
+        int at = email.indexOf('@');
+        if (at <= 1) {
+            return "***";
+        }
+        return email.charAt(0) + "***" + email.substring(at);
     }
 }

@@ -6,6 +6,7 @@ import az.saglamol.common.security.AuthContext;
 import az.saglamol.fraud.client.ClaimDetailResponse;
 import az.saglamol.fraud.client.ClaimInternalClient;
 import az.saglamol.fraud.client.ClaimSummaryResponse;
+import az.saglamol.fraud.client.DocumentHashBatchRequest;
 import az.saglamol.fraud.client.HealthRecordInternalClient;
 import az.saglamol.fraud.client.MedicalDocumentHashResponse;
 import az.saglamol.fraud.client.PolicyDetailResponse;
@@ -198,8 +199,16 @@ public class FraudAssessmentService {
 
     private List<String> documentHashes(ClaimDetailResponse claim) {
         try {
-            return healthRecordClient.documentsByClaim(claim.id()).stream()
-                    .map(document -> healthRecordClient.documentHash(document.id()))
+            List<UUID> documentIds = claim.documentIds();
+            if (documentIds == null || documentIds.isEmpty()) {
+                documentIds = healthRecordClient.documentsByClaim(claim.id()).stream()
+                        .map(document -> document.id())
+                        .toList();
+            }
+            if (documentIds.isEmpty()) {
+                return List.of();
+            }
+            return healthRecordClient.documentHashes(new DocumentHashBatchRequest(documentIds)).stream()
                     .map(MedicalDocumentHashResponse::sha256Hash)
                     .filter(hash -> hash != null && !hash.isBlank())
                     .distinct()

@@ -16,7 +16,7 @@ public class RestPolicyInternalClient implements PolicyInternalClient {
     public RestPolicyInternalClient(
             RestClient.Builder restClientBuilder,
             @Value("${saglamol.clients.policy.base-url:http://localhost:8084}") String policyBaseUrl,
-            @Value("${saglamol.security.internal-auth.secret:${INTERNAL_SERVICE_SECRET:dev-internal-secret}}") String internalSecret
+            @Value("${saglamol.security.internal-auth.secret}") String internalSecret
     ) {
         this.restClient = restClientBuilder.baseUrl(policyBaseUrl).build();
         this.internalSecret = internalSecret;

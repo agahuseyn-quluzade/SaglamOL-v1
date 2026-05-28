@@ -58,13 +58,13 @@ public class InternalAuthFilter extends OncePerRequestFilter {
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setHeader(InternalAuthHeaders.CORRELATION_ID, correlationId);
         response.getWriter().write("""
-                {"timestamp":"%s","status":%d,"errorCode":"%s","message":"%s","correlationId":"%s"}
+                {"code":"%s","message":"%s","correlationId":"%s","timestamp":"%s","details":{"status":%d}}
                 """.formatted(
-                Instant.now(),
-                status,
                 escape(exception.getErrorCode()),
                 escape(exception.getMessage()),
-                escape(correlationId)
+                escape(correlationId),
+                Instant.now(),
+                status
         ));
     }
 

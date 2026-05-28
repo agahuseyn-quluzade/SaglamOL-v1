@@ -10,6 +10,10 @@ import az.saglamol.claim.dto.response.ClaimSummaryResponse;
 import az.saglamol.claim.entity.ClaimStatus;
 import az.saglamol.claim.service.ClaimService;
 import az.saglamol.common.security.AuthContextHolder;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,6 +31,9 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/claims")
+@Tag(name = "Claims", description = "Claim creation, document attachment, submission and search")
+@SecurityRequirement(name = "BearerAuth")
+@ApiResponse(responseCode = "200", description = "Successful claim operation")
 public class ClaimController {
 
     private final ClaimService claimService;
@@ -36,36 +43,43 @@ public class ClaimController {
     }
 
     @PostMapping
+    @Operation(summary = "Create draft claim")
     public ClaimResponse createClaim(@Valid @RequestBody CreateClaimRequest request) {
         return claimService.createClaim(AuthContextHolder.getRequired(), request);
     }
 
     @PostMapping("/{claimId}/items")
+    @Operation(summary = "Add item to a draft claim")
     public ClaimItemResponse addItem(@PathVariable UUID claimId, @Valid @RequestBody ClaimItemRequest request) {
         return claimService.addClaimItem(AuthContextHolder.getRequired(), claimId, request);
     }
 
     @PostMapping("/{claimId}/documents")
+    @Operation(summary = "Attach document reference to a draft claim")
     public void attachDocument(@PathVariable UUID claimId, @Valid @RequestBody AttachClaimDocumentRequest request) {
         claimService.attachDocument(AuthContextHolder.getRequired(), claimId, request);
     }
 
     @PostMapping("/{claimId}/submit")
+    @Operation(summary = "Submit a draft claim")
     public ClaimResponse submit(@PathVariable UUID claimId) {
         return claimService.submitClaim(AuthContextHolder.getRequired(), claimId);
     }
 
     @GetMapping("/{claimId}")
+    @Operation(summary = "Get claim by ID")
     public ClaimResponse claim(@PathVariable UUID claimId) {
         return claimService.getClaimById(AuthContextHolder.getRequired(), claimId);
     }
 
     @GetMapping("/my")
+    @Operation(summary = "Get current patient's claims")
     public Page<ClaimSummaryResponse> myClaims(Pageable pageable) {
         return claimService.getMyClaims(AuthContextHolder.getRequired(), pageable);
     }
 
     @GetMapping
+    @Operation(summary = "Search claims by scoped filters")
     public Page<ClaimSummaryResponse> search(
             @RequestParam(required = false) UUID companyId,
             @RequestParam(required = false) UUID patientProfileId,

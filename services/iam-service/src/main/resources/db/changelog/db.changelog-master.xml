@@ -274,5 +274,45 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="demo-001-seed-local-users" author="codex" context="local">
+        <sql>
+            INSERT INTO user_account (id, email, phone_number, password_hash, status, created_at, last_login_at) VALUES
+                ('10000000-0000-0000-0000-000000000001', 'admin@saglamol.az', '+994501000001', '$2a$10$qSIjxbqflqsAY4RdV7zf7uzPd3uFd1VVe1OuFFG09o8HnRAsPAjty', 'ACTIVE', CURRENT_TIMESTAMP, NULL),
+                ('10000000-0000-0000-0000-000000000002', 'insurance-admin@saglamol.az', '+994501000002', '$2a$10$qSIjxbqflqsAY4RdV7zf7uzPd3uFd1VVe1OuFFG09o8HnRAsPAjty', 'ACTIVE', CURRENT_TIMESTAMP, NULL),
+                ('10000000-0000-0000-0000-000000000003', 'insurance-staff@saglamol.az', '+994501000003', '$2a$10$qSIjxbqflqsAY4RdV7zf7uzPd3uFd1VVe1OuFFG09o8HnRAsPAjty', 'ACTIVE', CURRENT_TIMESTAMP, NULL),
+                ('10000000-0000-0000-0000-000000000004', 'agent@saglamol.az', '+994501000004', '$2a$10$qSIjxbqflqsAY4RdV7zf7uzPd3uFd1VVe1OuFFG09o8HnRAsPAjty', 'ACTIVE', CURRENT_TIMESTAMP, NULL),
+                ('10000000-0000-0000-0000-000000000005', 'patient@saglamol.az', '+994501000005', '$2a$10$qSIjxbqflqsAY4RdV7zf7uzPd3uFd1VVe1OuFFG09o8HnRAsPAjty', 'ACTIVE', CURRENT_TIMESTAMP, NULL),
+                ('10000000-0000-0000-0000-000000000006', 'doctor@saglamol.az', '+994501000006', '$2a$10$qSIjxbqflqsAY4RdV7zf7uzPd3uFd1VVe1OuFFG09o8HnRAsPAjty', 'ACTIVE', CURRENT_TIMESTAMP, NULL),
+                ('10000000-0000-0000-0000-000000000007', 'hospital-admin@saglamol.az', '+994501000007', '$2a$10$qSIjxbqflqsAY4RdV7zf7uzPd3uFd1VVe1OuFFG09o8HnRAsPAjty', 'ACTIVE', CURRENT_TIMESTAMP, NULL),
+                ('10000000-0000-0000-0000-000000000008', 'hospital-staff@saglamol.az', '+994501000008', '$2a$10$qSIjxbqflqsAY4RdV7zf7uzPd3uFd1VVe1OuFFG09o8HnRAsPAjty', 'ACTIVE', CURRENT_TIMESTAMP, NULL)
+            ON CONFLICT (email) DO NOTHING;
+
+            INSERT INTO user_role (user_id, role_id)
+            SELECT '10000000-0000-0000-0000-000000000001', id FROM role WHERE code = 'ADMIN'
+            ON CONFLICT DO NOTHING;
+            INSERT INTO user_role (user_id, role_id)
+            SELECT '10000000-0000-0000-0000-000000000002', id FROM role WHERE code = 'INSURANCE_ADMIN'
+            ON CONFLICT DO NOTHING;
+            INSERT INTO user_role (user_id, role_id)
+            SELECT '10000000-0000-0000-0000-000000000003', id FROM role WHERE code = 'INSURANCE_STAFF'
+            ON CONFLICT DO NOTHING;
+            INSERT INTO user_role (user_id, role_id)
+            SELECT '10000000-0000-0000-0000-000000000004', id FROM role WHERE code = 'AGENT'
+            ON CONFLICT DO NOTHING;
+            INSERT INTO user_role (user_id, role_id)
+            SELECT '10000000-0000-0000-0000-000000000005', id FROM role WHERE code = 'PATIENT'
+            ON CONFLICT DO NOTHING;
+            INSERT INTO user_role (user_id, role_id)
+            SELECT '10000000-0000-0000-0000-000000000006', id FROM role WHERE code = 'DOCTOR'
+            ON CONFLICT DO NOTHING;
+            INSERT INTO user_role (user_id, role_id)
+            SELECT '10000000-0000-0000-0000-000000000007', id FROM role WHERE code = 'HOSPITAL_ADMIN'
+            ON CONFLICT DO NOTHING;
+            INSERT INTO user_role (user_id, role_id)
+            SELECT '10000000-0000-0000-0000-000000000008', id FROM role WHERE code = 'HOSPITAL_STAFF'
+            ON CONFLICT DO NOTHING;
+        </sql>
+    </changeSet>
+
     <include file="db/outbox-tables-template.xml"/>
 </databaseChangeLog>

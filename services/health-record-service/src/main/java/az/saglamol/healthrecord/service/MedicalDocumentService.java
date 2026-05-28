@@ -164,13 +164,17 @@ public class MedicalDocumentService {
     @Transactional(readOnly = true)
     public MedicalDocumentHashResponse documentHash(UUID documentId) {
         MedicalDocument document = requireDocument(documentId);
-        return new MedicalDocumentHashResponse(
-                document.getId(),
-                document.getSha256Hash(),
-                document.getPatientProfileId(),
-                document.getClaimId(),
-                document.getHospitalId()
-        );
+        return toHashResponse(document);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MedicalDocumentHashResponse> documentHashes(List<UUID> documentIds) {
+        if (documentIds == null || documentIds.isEmpty()) {
+            return List.of();
+        }
+        return documentRepository.findAllById(documentIds).stream()
+                .map(this::toHashResponse)
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -193,5 +197,15 @@ public class MedicalDocumentService {
     private String buildObjectKey(UUID patientProfileId, UUID documentId, String fileName) {
         String safeName = fileName == null ? "document" : fileName.replaceAll("[^A-Za-z0-9._-]", "_");
         return "patients/%s/documents/%s/%s".formatted(patientProfileId, documentId, safeName);
+    }
+
+    private MedicalDocumentHashResponse toHashResponse(MedicalDocument document) {
+        return new MedicalDocumentHashResponse(
+                document.getId(),
+                document.getSha256Hash(),
+                document.getPatientProfileId(),
+                document.getClaimId(),
+                document.getHospitalId()
+        );
     }
 }

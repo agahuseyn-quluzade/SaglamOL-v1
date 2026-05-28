@@ -18,6 +18,13 @@ public class SmsMockSender implements NotificationSender {
 
     @Override
     public void send(Notification notification) {
-        log.info("Mock SMS notification id={} to={}", notification.getId(), notification.getRecipientPhone());
+        log.info("Mock SMS notification id={} to={}", notification.getId(), maskPhone(notification.getRecipientPhone()));
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 4) {
+            return "***";
+        }
+        return "***" + phone.substring(phone.length() - 4);
     }
 }

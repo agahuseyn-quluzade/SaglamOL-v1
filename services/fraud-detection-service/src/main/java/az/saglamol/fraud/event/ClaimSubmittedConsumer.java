@@ -49,7 +49,8 @@ public class ClaimSubmittedConsumer extends IdempotentEventConsumer {
                 "SUBMITTED",
                 event.serviceType(),
                 null,
-                event.totalAmount()
+                event.totalAmount(),
+                event.documentIds()
         ));
     }
 }

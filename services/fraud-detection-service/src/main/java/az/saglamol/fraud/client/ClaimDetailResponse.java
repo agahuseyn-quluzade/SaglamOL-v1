@@ -2,6 +2,7 @@ package az.saglamol.fraud.client;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record ClaimDetailResponse(
@@ -15,6 +16,7 @@ public record ClaimDetailResponse(
         String status,
         String serviceType,
         LocalDate treatmentDate,
-        BigDecimal claimAmount
+        BigDecimal claimAmount,
+        List<UUID> documentIds
 ) {
 }

@@ -18,6 +18,9 @@ public class JwtTokenService {
     private final Duration accessTokenTtl;
 
     public JwtTokenService(String secret, Duration accessTokenTtl) {
+        if (secret == null || secret.isBlank() || secret.length() < 32) {
+            throw new IllegalArgumentException("JWT secret must be provided and contain at least 32 characters");
+        }
         this.secretKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.accessTokenTtl = accessTokenTtl;
     }
