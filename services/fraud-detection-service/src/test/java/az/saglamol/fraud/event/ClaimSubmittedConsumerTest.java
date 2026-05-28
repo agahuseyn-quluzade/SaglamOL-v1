@@ -13,7 +13,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -49,7 +51,9 @@ class ClaimSubmittedConsumerTest {
 
         consumer.onMessage(envelope);
 
-        verify(assessmentService).checkSubmittedClaim(any(ClaimDetailResponse.class));
+        var captor = forClass(ClaimDetailResponse.class);
+        verify(assessmentService).checkSubmittedClaim(captor.capture());
+        assertEquals(envelope.payload().documentIds(), captor.getValue().documentIds());
         verify(processedEventService).markProcessed(envelope.eventId(), "ClaimSubmittedEvent",
                 "fraud-detection-claim-submitted-consumer");
     }
@@ -57,6 +61,7 @@ class ClaimSubmittedConsumerTest {
     private EventEnvelope<ClaimSubmittedEvent> envelope() {
         UUID eventId = UUID.randomUUID();
         UUID claimId = UUID.randomUUID();
+        UUID documentId = UUID.randomUUID();
         ClaimSubmittedEvent payload = new ClaimSubmittedEvent(
                 claimId,
                 "CLM-1",
@@ -67,7 +72,7 @@ class ClaimSubmittedConsumerTest {
                 UUID.randomUUID(),
                 "CONSULTATION",
                 new BigDecimal("125.00"),
-                List.of(UUID.randomUUID()),
+                List.of(documentId),
                 Instant.now()
         );
         return new EventEnvelope<>(

@@ -7,13 +7,14 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JwtTokenServiceTest {
 
     @Test
     void generatesAndParsesAccessToken() {
         JwtTokenService tokenService = new JwtTokenService(
-                "dev-local-secret-change-me-dev-local-secret-change-me",
+                "test-jwt-secret-contains-at-least-32-characters",
                 Duration.ofMinutes(15)
         );
         UUID userId = UUID.randomUUID();
@@ -30,5 +31,11 @@ class JwtTokenServiceTest {
         assertEquals("user@gmail.com", parsed.email());
         assertEquals("+994501234567", parsed.phoneNumber());
         assertEquals(List.of(RoleConstants.PATIENT), parsed.roles());
+    }
+
+    @Test
+    void rejectsBlankOrWeakSecret() {
+        assertThrows(IllegalArgumentException.class, () -> new JwtTokenService("", Duration.ofMinutes(15)));
+        assertThrows(IllegalArgumentException.class, () -> new JwtTokenService("short-secret", Duration.ofMinutes(15)));
     }
 }

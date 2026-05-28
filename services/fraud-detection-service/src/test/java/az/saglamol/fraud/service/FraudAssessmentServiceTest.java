@@ -6,9 +6,9 @@ import az.saglamol.common.security.RoleConstants;
 import az.saglamol.fraud.client.ClaimDetailResponse;
 import az.saglamol.fraud.client.ClaimInternalClient;
 import az.saglamol.fraud.client.ClaimSummaryResponse;
+import az.saglamol.fraud.client.DocumentHashBatchRequest;
 import az.saglamol.fraud.client.HealthRecordInternalClient;
 import az.saglamol.fraud.client.MedicalDocumentHashResponse;
-import az.saglamol.fraud.client.MedicalDocumentSummaryResponse;
 import az.saglamol.fraud.client.PolicyDetailResponse;
 import az.saglamol.fraud.client.PolicyInternalClient;
 import az.saglamol.fraud.client.ProfileScopeClient;
@@ -52,6 +52,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -99,13 +100,13 @@ class FraudAssessmentServiceTest {
         String hash = "a".repeat(64);
 
         ClaimDetailResponse claim = new ClaimDetailResponse(claimId, "CLM-1", policyId, companyId, patientId,
-                hospitalId, doctorId, "SUBMITTED", "SURGERY", LocalDate.now(), new BigDecimal("1000.00"));
+                hospitalId, doctorId, "SUBMITTED", "SURGERY", LocalDate.now(), new BigDecimal("1000.00"), List.of(documentId));
         when(claimClient.getClaim(claimId)).thenReturn(claim);
         when(profileScopeClient.userSummary(userId)).thenReturn(summary(userId, companyId, null));
         when(policyClient.getPolicy(policyId)).thenReturn(new PolicyDetailResponse(policyId, companyId, patientId,
                 LocalDate.now().minusDays(3), LocalDate.now().plusYears(1), "ACTIVE"));
-        when(healthRecordClient.documentsByClaim(claimId)).thenReturn(List.of(document(documentId, claimId, patientId, hospitalId)));
-        when(healthRecordClient.documentHash(documentId)).thenReturn(new MedicalDocumentHashResponse(documentId, hash, patientId, claimId, hospitalId));
+        when(healthRecordClient.documentHashes(any(DocumentHashBatchRequest.class)))
+                .thenReturn(List.of(new MedicalDocumentHashResponse(documentId, hash, patientId, claimId, hospitalId)));
         when(hashIndexRepository.existsBySha256HashAndClaimIdNot(hash, claimId)).thenReturn(true);
         when(hashIndexRepository.findBySha256Hash(hash)).thenReturn(List.of());
         when(claimClient.claimsByCompany(eq(companyId), any(Pageable.class))).thenReturn(new PageImpl<>(List.of(
@@ -128,6 +129,37 @@ class FraudAssessmentServiceTest {
         assertTrue(response.signals().stream().anyMatch(signal -> signal.signalType() == FraudSignalType.HIGH_AMOUNT));
         verify(hashIndexRepository).save(any(DocumentHashIndex.class));
         verify(outboxEventService).saveEvent(eq("FraudAssessment"), any(UUID.class), eq("FraudCheckCompletedEvent"), any(Object.class));
+    }
+
+    @Test
+    void checkSubmittedClaimWithNewDocumentHashSavesHashWithoutDuplicateSignal() {
+        UUID claimId = UUID.randomUUID();
+        UUID policyId = UUID.randomUUID();
+        UUID companyId = UUID.randomUUID();
+        UUID patientId = UUID.randomUUID();
+        UUID hospitalId = UUID.randomUUID();
+        UUID documentId = UUID.randomUUID();
+        String hash = "b".repeat(64);
+        ClaimDetailResponse claim = new ClaimDetailResponse(claimId, "CLM-NEW", policyId, companyId, patientId,
+                hospitalId, null, "SUBMITTED", "CONSULTATION", LocalDate.now(), new BigDecimal("100.00"), List.of(documentId));
+        when(policyClient.getPolicy(policyId)).thenReturn(new PolicyDetailResponse(policyId, companyId, patientId,
+                LocalDate.now().minusDays(30), LocalDate.now().plusYears(1), "ACTIVE"));
+        when(healthRecordClient.documentHashes(any(DocumentHashBatchRequest.class)))
+                .thenReturn(List.of(new MedicalDocumentHashResponse(documentId, hash, patientId, claimId, hospitalId)));
+        when(hashIndexRepository.existsBySha256HashAndClaimIdNot(hash, claimId)).thenReturn(false);
+        when(hashIndexRepository.findBySha256Hash(hash)).thenReturn(List.of());
+        when(claimClient.claimsByCompany(eq(companyId), any(Pageable.class))).thenReturn(new PageImpl<>(List.of()));
+        when(assessmentRepository.save(any(FraudAssessment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(signalRepository.save(any(FraudSignal.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(hashIndexRepository.save(any(DocumentHashIndex.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        FraudAssessmentDetailResponse response = service.checkSubmittedClaim(claim);
+
+        assertEquals(FraudAssessmentStatus.COMPLETED, response.assessment().status());
+        assertTrue(response.signals().stream().noneMatch(signal -> signal.signalType() == FraudSignalType.DUPLICATE_DOCUMENT));
+        verify(healthRecordClient).documentHashes(any(DocumentHashBatchRequest.class));
+        verify(healthRecordClient, never()).documentsByClaim(claimId);
+        verify(hashIndexRepository).save(any(DocumentHashIndex.class));
     }
 
     @Test
@@ -154,11 +186,6 @@ class FraudAssessmentServiceTest {
     private UserProfileSummaryResponse summary(UUID userId, UUID companyId, UUID hospitalId) {
         return new UserProfileSummaryResponse(userId, null, null, UUID.randomUUID(), companyId,
                 null, hospitalId, null, false, false, true, false, false);
-    }
-
-    private MedicalDocumentSummaryResponse document(UUID documentId, UUID claimId, UUID patientId, UUID hospitalId) {
-        return new MedicalDocumentSummaryResponse(documentId, null, null, claimId, patientId, hospitalId,
-                "INVOICE", "invoice.pdf", 1024L, "application/pdf", "CONFIRMED");
     }
 
     private ClaimSummaryResponse summaryClaim(UUID claimId, UUID companyId, UUID patientId, BigDecimal amount) {

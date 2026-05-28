@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
         "spring.cloud.config.enabled=false",
         "eureka.client.enabled=false",
         "spring.liquibase.change-log=classpath:/db/changelog/db.changelog-master.xml",
+        "spring.liquibase.contexts=prod",
         "spring.jpa.hibernate.ddl-auto=validate"
 })
 class PolicyRepositorySchemaTest {

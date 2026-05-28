@@ -9,6 +9,8 @@ import az.saglamol.claim.client.dto.UserProfileSummaryResponse;
 import az.saglamol.claim.dto.request.ClaimItemRequest;
 import az.saglamol.claim.dto.request.CreateClaimRequest;
 import az.saglamol.claim.entity.Claim;
+import az.saglamol.claim.entity.ClaimDocumentReference;
+import az.saglamol.claim.entity.ClaimDocumentStatus;
 import az.saglamol.claim.entity.ClaimItem;
 import az.saglamol.claim.entity.ClaimStatus;
 import az.saglamol.claim.entity.OutboxEvent;
@@ -44,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentCaptor.forClass;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -124,11 +127,13 @@ class ClaimServiceLifecycleTest {
     @Test
     void submitClaimCalculatesAmountReservesLimitAndWritesOutboxEvent() {
         UUID claimId = UUID.randomUUID();
+        UUID itemDocumentId = UUID.randomUUID();
+        UUID attachedDocumentId = UUID.randomUUID();
         Claim claim = draftClaim(claimId);
         when(claimRepository.findById(claimId)).thenReturn(Optional.of(claim));
         when(profileClient.userSummary(userId)).thenReturn(patientSummary());
         when(itemRepository.findByClaimId(claimId)).thenReturn(List.of(
-                item(claimId, "100.00", 2),
+                item(claimId, "100.00", 2, itemDocumentId),
                 item(claimId, "50.00", 1)
         ));
         when(policyClient.getPolicy(policyId)).thenReturn(policy());
@@ -157,7 +162,15 @@ class ClaimServiceLifecycleTest {
                 Instant.now(),
                 Instant.now()
         ));
-        when(documentRepository.findByClaimId(claimId)).thenReturn(List.of());
+        when(documentRepository.findByClaimId(claimId)).thenReturn(List.of(new ClaimDocumentReference(
+                UUID.randomUUID(),
+                claimId,
+                attachedDocumentId,
+                "INVOICE",
+                true,
+                ClaimDocumentStatus.ATTACHED,
+                Instant.now()
+        )));
 
         var response = claimService.submitClaim(patientAuth(), claimId);
 
@@ -167,7 +180,10 @@ class ClaimServiceLifecycleTest {
         assertEquals(new BigDecimal("50.00"), response.patientPayAmount());
         assertEquals(reservationId, response.policyReservationId());
         verify(historyRepository).save(any());
-        verify(outboxEventService).saveEvent(eq("Claim"), eq(claimId), eq(ClaimSubmittedEvent.class.getSimpleName()), any(Object.class));
+        var eventCaptor = forClass(Object.class);
+        verify(outboxEventService).saveEvent(eq("Claim"), eq(claimId), eq(ClaimSubmittedEvent.class.getSimpleName()), eventCaptor.capture());
+        ClaimSubmittedEvent event = (ClaimSubmittedEvent) eventCaptor.getValue();
+        assertEquals(List.of(itemDocumentId, attachedDocumentId), event.documentIds());
     }
 
     @Test
@@ -275,8 +291,12 @@ class ClaimServiceLifecycleTest {
     }
 
     private ClaimItem item(UUID claimId, String amount, int quantity) {
+        return item(claimId, amount, quantity, null);
+    }
+
+    private ClaimItem item(UUID claimId, String amount, int quantity, UUID documentId) {
         return new ClaimItem(UUID.randomUUID(), claimId, "Service", null, new BigDecimal(amount),
-                quantity, LocalDate.now(), null, Instant.now(), Instant.now());
+                quantity, LocalDate.now(), documentId, Instant.now(), Instant.now());
     }
 
     private PolicyDetailResponse policy() {
