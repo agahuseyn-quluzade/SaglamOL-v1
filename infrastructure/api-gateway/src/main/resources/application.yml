@@ -1,0 +1,62 @@
+server:
+  port: 8080
+
+spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: iam-service
+          uri: lb://iam-service
+          predicates:
+            - Path=/api/v1/iam/**
+        - id: user-profile-service
+          uri: lb://user-profile-service
+          predicates:
+            - Path=/api/v1/users/**
+        - id: policy-service
+          uri: lb://policy-service
+          predicates:
+            - Path=/api/v1/policies/**
+        - id: claim-service
+          uri: lb://claim-service
+          predicates:
+            - Path=/api/v1/claims/**
+        - id: health-record-service
+          uri: lb://health-record-service
+          predicates:
+            - Path=/api/v1/health-records/**
+        - id: ai-risk-service
+          uri: lb://ai-risk-service
+          predicates:
+            - Path=/api/v1/ai-risk/**
+        - id: fraud-detection-service
+          uri: lb://fraud-detection-service
+          predicates:
+            - Path=/api/v1/fraud/**
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/v1/notifications/**
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/v1/payments/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_DEFAULT_ZONE:http://localhost:8761/eureka/}
+
+iam:
+  jwt:
+    secret: ${IAM_JWT_SECRET:dev-local-secret-change-me-dev-local-secret-change-me}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

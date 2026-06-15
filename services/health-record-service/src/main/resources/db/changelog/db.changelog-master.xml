@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="001-create-health-record-tables" author="codex">
+        <sql>
+            CREATE TABLE health_record (
+                id UUID PRIMARY KEY,
+                patient_id UUID NOT NULL,
+                doctor_id UUID NOT NULL,
+                diagnosis_code VARCHAR(80) NOT NULL,
+                treatment_date DATE NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE treatment (
+                id UUID PRIMARY KEY,
+                health_record_id UUID NOT NULL REFERENCES health_record(id),
+                service_type VARCHAR(80) NOT NULL,
+                description TEXT NULL
+            );
+
+            CREATE TABLE medical_document (
+                id UUID PRIMARY KEY,
+                health_record_id UUID NOT NULL REFERENCES health_record(id),
+                file_name VARCHAR(255) NOT NULL,
+                storage_path VARCHAR(500) NOT NULL,
+                sha256_hash CHAR(64) NULL,
+                file_size_bytes BIGINT NOT NULL,
+                mime_type VARCHAR(120) NOT NULL,
+                status VARCHAR(40) NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE health_access_log (
+                id UUID PRIMARY KEY,
+                record_id UUID NOT NULL,
+                actor_id UUID NOT NULL,
+                action VARCHAR(80) NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE document_hash_index (
+                id UUID PRIMARY KEY,
+                document_id UUID NOT NULL,
+                sha256_hash CHAR(64) NOT NULL,
+                file_size_bytes BIGINT NOT NULL,
+                mime_type VARCHAR(120) NOT NULL,
+                invoice_number VARCHAR(120) NULL,
+                clinic_id UUID NULL,
+                patient_id UUID NULL,
+                first_seen_at TIMESTAMP NOT NULL
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+    <changeSet id="001-create-payment-tables" author="codex">
+        <sql>
+            CREATE TABLE payment_transaction (
+                id UUID PRIMARY KEY,
+                policy_id UUID NULL,
+                claim_id UUID NULL,
+                payer_user_id UUID NULL,
+                amount DECIMAL(12,2) NOT NULL,
+                currency VARCHAR(3) NOT NULL,
+                type VARCHAR(40) NOT NULL,
+                status VARCHAR(40) NOT NULL,
+                provider VARCHAR(80) NULL,
+                provider_reference VARCHAR(160) NULL,
+                created_at TIMESTAMP NOT NULL,
+                updated_at TIMESTAMP NOT NULL
+            );
+
+            CREATE TABLE payment_event_log (
+                id UUID PRIMARY KEY,
+                payment_transaction_id UUID NOT NULL REFERENCES payment_transaction(id),
+                event_type VARCHAR(120) NOT NULL,
+                payload TEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL
+            );
+        </sql>
+    </changeSet>
+</databaseChangeLog>

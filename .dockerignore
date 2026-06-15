@@ -1,0 +1,14 @@
+.git
+.gradle
+.idea
+build
+**/build
+out
+**/out
+*.iml
+.env
+.env.*
+!/.env.example
+docker-compose*.yml
+docs
+*.md

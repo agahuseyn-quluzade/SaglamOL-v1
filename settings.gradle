@@ -1,0 +1,19 @@
+rootProject.name = 'saglam-ol'
+
+include 'common:common-events'
+include 'common:common-security'
+include 'common:common-exception'
+
+include 'infrastructure:api-gateway'
+include 'infrastructure:config-server'
+include 'infrastructure:discovery-server'
+
+include 'services:iam-service'
+include 'services:user-profile-service'
+include 'services:policy-service'
+include 'services:claim-service'
+include 'services:health-record-service'
+include 'services:ai-risk-service'
+include 'services:fraud-detection-service'
+include 'services:notification-service'
+include 'services:payment-service'
