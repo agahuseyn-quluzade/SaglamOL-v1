@@ -1,0 +1,47 @@
+Niyə birlikdə ola bilər?
+Əgər layihə kiçikdirsə, ilk MVP mərhələsində policy və claim eyni servis içində ola bilər:
+•policy cədvəlləri
+•claim cədvəlləri
+•claim eligibility yoxlaması
+•claim statusları
+•policy limit hesablaması
+Hamısı məsələn insurance-service adlı bir servis içində saxlanıla bilər.
+Bu yanaşma sadədir, çünki claim zatən policy-yə bağlıdır. Claim yaradılarkən mütləq policy yoxlanılır.
+
+Amma niyə ayırmaq daha yaxşıdır?
+Çünki onların məsuliyyəti fərqlidir.
+
+policy-service suallara cavab verir:
+•istifadəçinin aktiv polisi var?
+•bu xidmət polisə daxildir?
+•illik limit nə qədərdir?
+•hansı paket hansı şərtlərlə işləyir?
+•polis expired olubmu?
+
+claim-service isə proses idarə edir:
+•istifadəçi claim göndərdi?
+•sənədlər yükləndi?
+•fraud yoxlaması edildi?
+•AI risk yoxlaması edildi?
+•manual review lazımdır?
+•claim approve/reject edildi?
+•payment yaradıldı?
+Yəni policy-service daha çox qayda və müqavilə servisidir, claim-service isə müraciət və workflow servisidir.
+Sağlamlıq sığortasında daha real model
+Real sığorta sistemlərində claim prosesi policy-dən daha mürəkkəb olur. Məsələn claim bu servislərlə danışacaq:
+•policy-service: polis uyğunluğu
+•health-record-service: tibbi sənəd və analizlər
+•ai-risk-service: risk qiymətləndirməsi
+•payment-service: ödəniş yaratmaq
+•notification-service: istifadəçiyə status göndərmək
+Əgər claim və policy eyni servis olsa, zamanla həmin servis çox böyüyəcək və qarışıq olacaq.
+Mənim tövsiyəm
+Hazırkı layihə microservice kimi qurulduğu üçün:
+•policy-service ayrı qalsın
+•claim-service ayrı qalsın
+Amma ilk mərhələdə bunları çox sadə saxlaya bilərik:
+• policy-service: paket, polis, coverage rule, limit
+
+• claim-service: claim yaratmaq, status, policy yoxlama request-i
+Yəni ayrı servis olaraq qalsınlar, amma aralarındakı inteqrasiyanı hələ sadə edək.
+Qısa cavab: ola bilər, amma SaglamOL-un planlanan arxitekturasında ayrı olması daha düzgündür.

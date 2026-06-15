@@ -1,0 +1,103 @@
+Polis Nədir? Polis sığorta müqaviləsidir. Yəni istifadəçi və ya şirkət müəyyən şərtlərlə sağlamlıq sığortası alır və bu sığortanın qaydaları policy kimi sistemdə saxlanılır.
+Məsələn istifadəçi belə bir sağlamlıq sığortası alır:
+•
+sığorta paketi: Standart Sağlamlıq
+•
+illik limit: 5000 AZN
+•
+başlanğıc tarixi: 2026-06-01
+•
+bitmə tarixi: 2027-06-01
+•
+əhatə etdiyi xidmətlər: həkim müayinəsi, analiz, təcili yardım
+•
+əhatə etmədiyi xidmətlər: estetik əməliyyat, bəzi bahalı prosedurlar
+•
+istifadəçinin öz ödəyəcəyi hissə: məsələn 10%
+Bu sənəd və onun qaydaları polis adlanır.
+Sistemdə policy-service əsasən bunlara baxacaq:
+•
+sığorta paketləri
+•
+istifadəçinin aktiv polisləri
+•
+polis statusu: ACTIVE, EXPIRED, CANCELLED
+•
+polis limitləri
+•
+hansı tibbi xidmətlərin qarşılandığı
+•
+hansı xidmətlərin qarşılanmadığı
+•
+illik və ya aylıq ödəniş məlumatları
+•
+claim üçün uyğunluq yoxlaması
+Sadə dillə: polis istifadəçinin hansı sağlamlıq xərclərinin sığorta tərəfindən ödənilə biləcəyini müəyyən edən qaydalar toplusudur.
+Claim Nədir? Claim istifadəçinin sığorta şirkətindən ödəniş tələbidir. Yəni istifadəçi tibbi xidmət alır, sonra həmin xərcin sığorta tərəfindən tam və ya qismən qarşılanmasını istəyir.
+Məsələn:
+1.
+İstifadəçi klinikada analiz verir.
+2.
+Analizin qiyməti 120 AZN olur.
+3.
+İstifadəçi qəbz və tibbi sənədi sistemə yükləyir.
+4.
+Sistem yoxlayır:
+◦
+istifadəçinin aktiv polisi var?
+◦
+bu xidmət polisə daxildir?
+◦
+illik limit dolmayıb?
+◦
+sənəd təkrar deyil?
+◦
+fraud riski varmı?
+5.
+Uyğundursa sığorta 120 AZN və ya məsələn 90% = 108 AZN ödəyir.
+Bu müraciət claim adlanır.
+Sistemdə claim-service əsasən bunlara baxacaq:
+•
+claim yaratmaq
+•
+claim statusunu idarə etmək
+•
+claim məbləğini saxlamaq
+•
+claim üçün tibbi sənədləri əlaqələndirmək
+•
+policy uyğunluğunu yoxlamaq
+•
+fraud və AI risk servislərinə yoxlama göndərmək
+•
+claim qərarı vermək: təsdiq, rədd, əlavə sənəd istəyi
+•
+ödəniş üçün payment-service-ə məlumat ötürmək
+Claim statusları adətən belə olur:
+•
+SUBMITTED: istifadəçi müraciət edib
+•
+UNDER_REVIEW: yoxlama gedir
+•
+NEEDS_MORE_DOCUMENTS: əlavə sənəd lazımdır
+•
+APPROVED: təsdiqləndi
+•
+REJECTED: rədd edildi
+•
+PAID: ödəniş edildi
+Policy və Claim Arasındakı Əlaqə Policy qaydadır, claim isə həmin qaydaya əsasən edilən ödəniş tələbidir.
+Sadə nümunə:
+•
+Policy deyir: “Analiz xərclərinin 90%-i qarşılanır, illik limit 5000 AZN-dir.”
+•
+Claim deyir: “Mən analiz üçün 120 AZN ödəmişəm, bunun sığorta tərəfindən qarşılanmasını istəyirəm.”
+•
+Sistem hesablayır: 120 AZN * 90% = 108 AZN
+•
+Sığorta istifadəçiyə və ya klinikaya 108 AZN ödəyir.
+Qısa formada:
+•
+Policy / Polis: istifadəçinin sığorta müqaviləsi və qaydalarıdır.
+•
+Claim: istifadəçinin həmin polis əsasında pul ödənişi almaq üçün etdiyi müraciətdir.

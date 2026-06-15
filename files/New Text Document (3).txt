@@ -1,0 +1,13 @@
+Bu mərhələdə məqsəd hospital/provider modelini pozmadan fərdi profil API-lərini tamamlamaqdır.
+
+Vacib nüanslar:
+- Patient, Doctor və Agent profilləri hospital entity-lərindən ayrı saxlanmalıdır.
+- Doctor hospital-a aid deyil; doctor ayrıca professional profildir və hospital-a assignment ilə bağlanır.
+- Patient öz profilini yalnız özü yarada və dəyişə bilməlidir.
+- Doctor öz profilini yalnız özü yarada və dəyişə bilməlidir.
+- Agent öz profilini yalnız özü yarada və dəyişə bilməlidir.
+- ADMIN bütün profilləri görə və idarə edə bilər.
+- Request body-də gələn iamUserId ownership üçün istifadə olunmamalıdır; AuthContext userId əsas götürülməlidir.
+- HOSPITAL_ADMIN doctor profile yaratmamalıdır, yalnız mövcud doctor-u hospital-a assign etməlidir.
+- unique constraint-lər mütləq qorunmalıdır: iamUserId, doctor licenseNumber, agent employeeCode.
+- Search endpoint-lərdə pagination olmalıdır.

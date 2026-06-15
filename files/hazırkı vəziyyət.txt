@@ -1,0 +1,734 @@
+Hazırkı Vəziyyət
+Layihə artıq tək Spring Boot app deyil, Gradle multi-module microservice monorepo formasındadır. Backend-only e-health insurance platforması kimi qurulur.
+Əsas struktur:
+common/
+  common-events
+  common-security
+  common-exception
+
+infrastructure/
+  api-gateway
+  config-server
+  discovery-server
+
+services/
+  iam-service
+  user-profile-service
+  policy-service
+  claim-service
+  health-record-service
+  ai-risk-service
+  fraud-detection-service
+  notification-service
+  payment-service
+Texniki baza:
+Java 21 hədəfi
+Spring Boot 3.3.6
+Spring Cloud 2023.0.4
+Gradle multi-module
+PostgreSQL
+Redis
+Kafka + Zookeeper
+MinIO
+Liquibase
+Docker Compose
+Hazırda layihə Foundation + IAM/Gateway + Docker/DB hazırlıq mərhələsindədir. Yəni biznes servislərin tam funksional API-ləri hələ yazılmayıb, amma onların strukturu, database-ləri, ilkin entity-ləri və migration-ları hazırlanıb.
+Cari Mərhələ
+Cari mərhələni belə adlandırmaq olar:
+Infrastructure + IAM Foundation
+Bu mərhələnin məqsədi:
+•
+bütün servis skeleton-larını yaratmaq
+•
+ümumi dependency və common modulları qurmaq
+•
+Docker infra stack-i hazırlamaq
+•
+database-ləri yaratmaq
+•
+ilkin cədvəlləri Liquibase ilə yaratmaq
+•
+IAM login/register əsasını hazırlamaq
+•
+Gateway route və JWT validation əsasını qurmaq
+Əldə Olunmuş Əsas Nailiyyətlər
+1.
+Monorepo Struktur Quruldu
+Layihə multi-module Gradle strukturuna keçirildi. Hər servis ayrıca modul kimi build olunur. Root src qovluğu silindi, çünki artıq root application yoxdur.
+2.
+Common Modullar Yaradıldı
+common-security:
+•
+RoleConstants
+•
+InternalAuthHeaders
+•
+JwtPrincipal
+•
+JwtTokenService
+JWT generate/parse məntiqi artıq təkrarlanmır. IAM və Gateway eyni common security kodundan istifadə edir.
+common-events:
+•
+EventEnvelope
+common-exception:
+•
+ErrorResponse
+•
+BaseBusinessException
+3.
+IAM Service Hazırlandı
+iam-service daxilində hazır olanlar:
+•
+register
+•
+email ilə login
+•
+phone ilə login
+•
+compatibility üçün identifier login
+•
+refresh token rotation
+•
+refresh token reuse detection
+•
+JWT access token
+•
+bcrypt password hashing
+•
+role seed data
+•
+phone number support
+•
+/me endpoint
+•
+Liquibase migration
+•
+JPA entity-lər:
+◦
+UserAccount
+◦
+Role
+◦
+Permission
+◦
+RefreshToken
+Endpoint-lər:
+POST /api/v1/iam/register
+POST /api/v1/iam/login/email
+POST /api/v1/iam/login/phone
+POST /api/v1/iam/login
+POST /api/v1/iam/refresh
+GET  /api/v1/iam/me
+4.
+API Gateway Hazırlandı
+Gateway-də:
+•
+servis route-ları əlavə edildi
+•
+JWT validation filter var
+•
+public IAM endpoint-ləri açıqdır
+•
+protected request-lərə header əlavə olunur:
+X-User-Id
+X-User-Roles
+X-Correlation-Id
+5.
+Docker Infrastructure Quruldu
+Root docker-compose.yml içində bunlar var:
+postgres
+redis
+zookeeper
+kafka
+minio
+discovery-server
+config-server
+api-gateway
+iam-service
+user-profile-service
+policy-service
+claim-service
+health-record-service
+ai-risk-service
+fraud-detection-service
+notification-service
+payment-service
+Hər deploy olunan servis üçün ayrıca Dockerfile əlavə edilib.
+6.
+Database Model Quruldu
+Tək PostgreSQL server istifadə olunur. İçində ayrı database-lər var:
+saglamol
+iam_db
+user_db
+policy_db
+claim_db
+health_record_db
+ai_analysis_db
+fraud_db
+notification_db
+payment_db
+postgres
+Burada saglamol servis DB deyil, IntelliJ/DataGrip üçün default connection database-dir.
+Servis DB-ləri:
+iam_db              -> iam-service
+user_db             -> user-profile-service
+policy_db           -> policy-service
+claim_db            -> claim-service
+health_record_db    -> health-record-service
+ai_analysis_db      -> ai-risk-service
+fraud_db            -> fraud-detection-service
+notification_db     -> notification-service
+payment_db          -> payment-service
+7.
+Liquibase Migration-lar Əlavə Edildi
+Hər servis üçün ilkin database cədvəlləri yaradılıb. Hazırda cədvəl sayları belə yoxlanılıb:
+iam_db=7
+user_db=6
+policy_db=7
+claim_db=8
+health_record_db=7
+ai_analysis_db=5
+fraud_db=5
+notification_db=5
+payment_db=4
+Bu saylara Liquibase-in öz databasechangelog və databasechangeloglock cədvəlləri də daxildir.
+8.
+Entity Skeleton-ları Əlavə Edildi
+Əsas JPA entity-lər yaradılıb:
+•
+User/Profile
+•
+Policy
+•
+Claim
+•
+Health Record
+•
+AI Risk
+•
+Fraud
+•
+Notification
+•
+Payment
+Bu entity-lər hələ tam biznes davranışlı domain model deyil, amma schema ilə uyğun ilkin JPA modeldir.
+9.
+Local Development Sənədi Əlavə Edildi
+docs/local-development.md içində:
+•
+IntelliJ DB connection
+•
+Docker infra commands
+•
+servis portları
+•
+IAM login nümunələri
+•
+active profile məlumatları
+Tamamlanmış İşlər
+Tamamlanmış əsas işlər:
+Gradle multi-module setup
+Common modules
+Service skeleton-lar
+Docker Compose infra
+Dockerfile-lar
+PostgreSQL database-lər
+Liquibase initial schema-lar
+IAM register/login/refresh
+Phone login və email login ayrılması
+Gateway route və JWT validation
+Common JWT refactor
+Payment service skeleton
+Local development docs
+Build yoxlamaları uğurlu keçib:
+.\gradlew.bat build
+docker compose config --quiet
+Yarana Biləcək Əsas Problemlər
+1.
+Docker Build Resurs Problemi
+docker compose up -d --build zamanı Docker Desktop paralel build zamanı EOF xətası verdi. Buna görə Dockerfile-lar dəyişdirildi: artıq image build etməzdən əvvəl host-da jar build etmək daha stabil yoldur.
+Tövsiyə olunan flow:
+.\gradlew.bat bootJar
+docker compose up -d --build
+2.
+Cədvəllərin Görünməməsi
+Cədvəllər yalnız servis start olanda Liquibase tərəfindən yaranır. Sadəcə Docker Postgres-i qaldırmaq cədvəl yaratmır.
+3.
+IntelliJ Database Cache
+IntelliJ köhnə saglamol_admin@localhost connection adını göstərə bilər. Bu real database deyil, stale data source ola bilər.
+4.
+Security Hələ Production Səviyyəsində Deyil
+JWT hazırda HMAC secret ilədir. Production üçün daha doğru model:
+IAM private key ilə sign edir
+Gateway public key ilə validate edir
+Bu sonrakı hardening mərhələsində edilməlidir.
+5.
+Servis Security-ləri Hələ Tam Standartlaşmayıb
+IAM-də security var, Gateway-də validation var. Amma digər servislərdə TrustedContextFilter, RBAC və method-level authorization hələ tam yazılmayıb.
+6.
+Biznes API-lər Hələ Skeleton-dur
+User/Profile, Policy, Claim və digər servislərdə entity/schema var, amma controller/service/repository biznes funksiyaları hələ tam yazılmayıb.
+7.
+Kafka/Outbox Hələ Tam İşlək Deyil
+Kafka container var, common event envelope var, amma outbox publisher və consumer-lər hələ implement edilməyib.
+8.
+Docker Service Healthcheck-lər App-lər Üçün Tam Deyil
+Infra container-lərdə healthcheck var. App service-lər üçün /actuator/health əsaslı healthcheck-lər sonrakı mərhələdə əlavə edilməlidir.
+Növbəti Mərhələlər
+Mərhələ 1: Docker Runtime Stabilizasiya
+Hədəf:
+•
+bütün servislər Docker-də görünməli və qalxmalıdır
+•
+docker compose ps içində bütün app service-lər görünməlidir
+•
+Gateway, IAM, Discovery Server container-ləri sağlam işləməlidir
+Görüləcək işlər:
+•
+.\gradlew.bat bootJar
+•
+docker compose up -d --build
+•
+app service healthcheck-ləri əlavə etmək
+•
+container startup order və retry-ləri düzəltmək
+•
+Docker docs-u yeniləmək
+Kritik asılılıqlar:
+•
+Postgres healthy olmalıdır
+•
+Kafka healthy olmalıdır
+•
+Discovery Server Gateway-dən əvvəl qalxmalıdır
+•
+bootJar-lar image build-dən əvvəl hazır olmalıdır
+Mərhələ 2: IAM-i Tamamlamaq
+Hədəf:
+•
+IAM real authentication/authorization mərkəzi olsun
+Görüləcək işlər:
+•
+role assignment endpoint-ləri
+•
+admin üçün user list/search
+•
+user status change:
+◦
+ACTIVE
+◦
+INACTIVE
+◦
+LOCKED
+•
+password change/reset flow
+•
+refresh token revoke/logout
+•
+security tests
+•
+Swagger/OpenAPI
+Kritik asılılıqlar:
+•
+iam_db schema hazırdır
+•
+Gateway JWT validation işləməlidir
+•
+common-security stabil qalmalıdır
+Mərhələ 3: Internal Service Security
+Hədəf:
+•
+Gateway-dən gələn identity header-ləri bütün servislərdə oxunsun
+•
+servis daxilində RBAC tətbiq olunsun
+Görüləcək işlər:
+•
+TrustedContextFilter common-security-ə əlavə etmək
+•
+SecurityContextHelper
+•
+@PreAuthorize qaydaları
+•
+X-User-Id, X-User-Roles parse
+•
+internal request signature üçün baza
+Kritik asılılıqlar:
+•
+Gateway header forwarding
+•
+common-security
+•
+role model
+Mərhələ 4: User Profile Service
+Hədəf:
+•
+patient, doctor, agent profilləri işlək API olsun
+Görüləcək işlər:
+•
+repositories
+•
+DTO-lar
+•
+mapper-lər
+•
+controller-lər
+•
+create/get/update patient
+•
+create/get/update doctor
+•
+create/get/update agent
+•
+address API
+•
+tests
+Kritik asılılıqlar:
+•
+IAM userId
+•
+Gateway identity header
+•
+user_db schema
+Mərhələ 5: Policy Service
+Hədəf:
+•
+sığorta planı və policy lifecycle işləsin
+Görüləcək işlər:
+•
+insurance plan CRUD
+•
+coverage rule CRUD
+•
+policy issue
+•
+eligibility check
+•
+limit usage
+•
+reservation model
+•
+Redis cache adapter
+Kritik asılılıqlar:
+•
+policy_db schema
+•
+User/Profile patientId
+•
+Redis
+•
+role-based access: ADMIN, AGENT
+Mərhələ 6: Claim Service
+Hədəf:
+•
+claim lifecycle platformanın əsas biznes axını kimi işləsin
+Görüləcək işlər:
+•
+claim create
+•
+claim submit
+•
+approve/reject
+•
+status history
+•
+status machine
+•
+policy eligibility sync call
+•
+claim item-lər
+•
+manual review status
+Kritik asılılıqlar:
+•
+policy-service eligibility
+•
+patient profile
+•
+claim_db schema
+•
+Gateway auth
+Mərhələ 7: Health Record Service
+Hədəf:
+•
+tibbi record və sənəd metadata axını işləsin
+Görüləcək işlər:
+•
+health record create/read
+•
+treatment create
+•
+document metadata
+•
+MinIO upload
+•
+SHA-256 hash
+•
+document status:
+◦
+PENDING_UPLOAD
+◦
+CONFIRMED
+◦
+UPLOAD_FAILED
+◦
+ORPHAN_CANDIDATE
+•
+access log
+Kritik asılılıqlar:
+•
+MinIO
+•
+health_record_db
+•
+doctor/patient profile
+•
+trusted identity headers
+Mərhələ 8: Simple AI Risk Service
+Hədəf:
+•
+API key ilə sadə AI risk analysis işləsin
+Görüləcək işlər:
+•
+AI provider config
+•
+RiskModelClient
+•
+external API call
+•
+timeout
+•
+retry
+•
+risk score parse
+•
+RiskAnalysis, RiskReason, AiRequestLog
+•
+fallback manual review event
+Kritik asılılıqlar:
+•
+AI_API_KEY
+•
+claim data
+•
+policy context
+•
+ai_analysis_db
+Mərhələ 9: Fraud Detection Service
+Hədəf:
+•
+rule-based fraud scoring işləsin
+Görüləcək işlər:
+•
+duplicate document rule
+•
+suspicious timing
+•
+frequent claims
+•
+high amount anomaly
+•
+fraud score
+•
+fraud signals
+•
+manual review flag
+Kritik asılılıqlar:
+•
+claim history
+•
+document hash
+•
+fraud_db
+•
+health-record-service document data
+Mərhələ 10: Payment Service
+Hədəf:
+•
+premium və payout tracking bazası işləsin
+Görüləcək işlər:
+•
+payment transaction create
+•
+premium payment status
+•
+claim payout request
+•
+refund tracking
+•
+provider adapter interface
+•
+payment event log
+Kritik asılılıqlar:
+•
+policy-service
+•
+claim-service
+•
+payment_db
+•
+gələcək external payment provider
+Mərhələ 11: Kafka + Outbox
+Hədəf:
+•
+servis-lər event-driven communication-a keçsin
+Görüləcək işlər:
+•
+outbox publisher common pattern
+•
+consumer idempotency
+•
+topics:
+◦
+claim.submitted
+◦
+claim.risk.scored
+◦
+claim.fraud.checked
+◦
+claim.approved
+◦
+claim.rejected
+◦
+policy.activated
+◦
+payment.completed
+•
+retry/backoff
+Kritik asılılıqlar:
+•
+Kafka
+•
+common-events
+•
+outbox_event table-ləri
+•
+consumer_processed_event pattern
+Mərhələ 12: Notification Service
+Hədəf:
+•
+status dəyişiklikləri üçün notification yaransın
+Görüləcək işlər:
+•
+template rendering
+•
+notification create
+•
+email mock
+•
+SMS mock
+•
+retry scheduler
+•
+event consumer-lər
+Kritik asılılıqlar:
+•
+Kafka events
+•
+notification_db
+•
+IAM userId
+Mərhələ 13: Observability
+Hədəf:
+•
+sistem monitorinqə hazır olsun
+Görüləcək işlər:
+•
+app healthcheck-lər
+•
+Prometheus
+•
+Grafana
+•
+actuator prometheus endpoint
+•
+correlation id logging
+•
+structured logs
+Kritik asılılıqlar:
+•
+actuator
+•
+Docker service healthchecks
+•
+Gateway correlation id
+Mərhələ 14: API Docs və Testlər
+Hədəf:
+•
+layihə test edilə və təqdim oluna bilsin
+Görüləcək işlər:
+•
+Swagger/OpenAPI
+•
+Postman collection
+•
+unit tests
+•
+controller tests
+•
+integration tests
+•
+Testcontainers
+•
+E2E happy path
+Kritik asılılıqlar:
+•
+API-lərin sabitləşməsi
+•
+Docker infra
+•
+seed data
+Mərhələ 15: Demo Flow
+Hədəf:
+•
+layihənin tam işlək demo axını olsun
+Demo flow:
+1.
+Admin/Patient register olur.
+2.
+Patient profile yaradılır.
+3.
+Admin insurance plan yaradır.
+4.
+Agent patient üçün policy issue edir.
+5.
+Doctor health record yaradır.
+6.
+Patient claim submit edir.
+7.
+Policy eligibility yoxlanır.
+8.
+AI risk score çıxarır.
+9.
+Fraud service yoxlayır.
+10.
+Agent approve/reject edir.
+11.
+Payment/payout tracking yaranır.
+12.
+Notification göndərilir.
+Kritik asılılıqlar:
+•
+bütün əsas servislərin REST API-ləri
+•
+Gateway
+•
+IAM
+•
+Policy
+•
+Claim
+•
+AI
+•
+Fraud
+•
+Notification
+•
+Payment
+Ən Məntiqli Növbəti Addım
+Növbəti texniki addım:
+Docker Runtime Stabilization
+Yəni bütün servislər Docker Desktop-da görünməli və docker compose ps içində işlək vəziyyətə gəlməlidir.
+Ondan sonra:
+User Profile Service API implementation
+Bu ardıcıllıq daha sağlamdır, çünki profile olmadan policy və claim axınları yarımçıq qalacaq.

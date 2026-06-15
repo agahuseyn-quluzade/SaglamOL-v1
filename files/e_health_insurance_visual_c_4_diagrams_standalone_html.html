@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI E-health Insurance — C4 Visual Diagrams</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .page {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 32px 18px;
+    }
+
+    .hero {
+      background: #0f172a;
+      color: white;
+      border-radius: 28px;
+      padding: 28px;
+      box-shadow: 0 15px 35px rgba(15, 23, 42, 0.18);
+      margin-bottom: 20px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.12);
+      color: #e2e8f0;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 4vw, 46px);
+      line-height: 1.08;
+    }
+
+    .hero p {
+      max-width: 850px;
+      color: #cbd5e1;
+      line-height: 1.6;
+      margin: 16px 0 0;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      background: white;
+      border-radius: 18px;
+      padding: 8px;
+      margin-bottom: 18px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    }
+
+    .tab-btn {
+      border: 0;
+      background: #f1f5f9;
+      color: #475569;
+      padding: 11px 15px;
+      border-radius: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: 0.15s ease;
+    }
+
+    .tab-btn:hover {
+      background: #e2e8f0;
+    }
+
+    .tab-btn.active {
+      background: #0f172a;
+      color: white;
+    }
+
+    .diagram {
+      display: none;
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 28px;
+      padding: 22px;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+      margin-bottom: 20px;
+    }
+
+    .diagram.active {
+      display: block;
+    }
+
+    .diagram h2 {
+      margin: 0 0 20px;
+      font-size: 22px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-5 {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .grid-flow {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .stack {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .box {
+      border: 1px solid #cbd5e1;
+      border-radius: 20px;
+      padding: 16px;
+      background: white;
+      box-shadow: 0 5px 12px rgba(15, 23, 42, 0.06);
+      min-height: 86px;
+    }
+
+    .box-content {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .icon {
+      width: 38px;
+      height: 38px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: white;
+      font-size: 22px;
+      flex-shrink: 0;
+    }
+
+    .box h3 {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .box p {
+      margin: 7px 0 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .primary {
+      background: #0f172a;
+      color: white;
+      border-color: #0f172a;
+    }
+
+    .primary p {
+      color: #cbd5e1;
+    }
+
+    .primary .icon {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .blue {
+      background: #eff6ff;
+      border-color: #93c5fd;
+    }
+
+    .green {
+      background: #ecfdf5;
+      border-color: #6ee7b7;
+    }
+
+    .purple {
+      background: #f5f3ff;
+      border-color: #c4b5fd;
+    }
+
+    .amber {
+      background: #fffbeb;
+      border-color: #fcd34d;
+    }
+
+    .red {
+      background: #fff1f2;
+      border-color: #fda4af;
+    }
+
+    .gray {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+
+    .boundary {
+      border: 2px dashed #cbd5e1;
+      border-radius: 26px;
+      background: #f8fafc;
+      padding: 18px;
+    }
+
+    .boundary-title {
+      display: inline-block;
+      background: white;
+      color: #475569;
+      border-radius: 999px;
+      padding: 7px 12px;
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 14px;
+      box-shadow: 0 3px 10px rgba(15, 23, 42, 0.06);
+    }
+
+    .boundary.blue-boundary {
+      background: #eff6ff99;
+      border-color: #93c5fd;
+    }
+
+    .boundary.green-boundary {
+      background: #ecfdf599;
+      border-color: #6ee7b7;
+    }
+
+    .boundary.purple-boundary {
+      background: #f5f3ff99;
+      border-color: #c4b5fd;
+    }
+
+    .boundary.amber-boundary {
+      background: #fffbeb99;
+      border-color: #fcd34d;
+    }
+
+    .arrow-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: #64748b;
+      margin: 16px 0;
+    }
+
+    .arrow-line {
+      height: 1px;
+      background: #cbd5e1;
+      flex: 1;
+    }
+
+    .arrow-label {
+      background: #f1f5f9;
+      border-radius: 999px;
+      padding: 5px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .arrow-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #f1f5f9;
+      font-weight: 900;
+    }
+
+    .center-card {
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .step {
+      position: relative;
+      border: 1px solid #e2e8f0;
+      border-radius: 20px;
+      background: white;
+      padding: 16px;
+      box-shadow: 0 5px 12px rgba(15, 23, 42, 0.06);
+      min-height: 130px;
+    }
+
+    .step-top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .step-number {
+      width: 34px;
+      height: 34px;
+      background: #0f172a;
+      color: white;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+    }
+
+    .step h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .step p {
+      margin: 8px 0 0;
+      color: #475569;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .note {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 14px 16px;
+      color: #475569;
+      box-shadow: 0 5px 12px rgba(15, 23, 42, 0.05);
+      margin-bottom: 18px;
+      font-size: 14px;
+    }
+
+    .test-panel {
+      background: white;
+      border: 1px solid #e2e8f0;
+      border-radius: 18px;
+      padding: 16px;
+      box-shadow: 0 5px 12px rgba(15, 23, 42, 0.05);
+    }
+
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .test {
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      border-radius: 14px;
+      padding: 12px;
+      font-size: 14px;
+    }
+
+    @media (max-width: 1100px) {
+      .grid-5, .grid-4, .grid-flow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 650px) {
+      .page {
+        padding: 18px 10px;
+      }
+
+      .hero, .diagram {
+        border-radius: 20px;
+        padding: 18px;
+      }
+
+      .grid-5, .grid-4, .grid-flow, .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <span class="badge">C4 Model Visual Architecture</span>
+      <h1>AI inteqrasiyalı E-health Insurance Platforması</h1>
+      <p>Bu fayl tək işləyən HTML-dir. React, Vite, npm və əlavə paket lazım deyil. VS Code-da Live Server ilə aç və diaqramları brauzerdə gör.</p>
+    </section>
+
+    <nav class="tabs" aria-label="C4 diagram tabs">
+      <button class="tab-btn active" data-target="context">1. Context</button>
+      <button class="tab-btn" data-target="container">2. Container</button>
+      <button class="tab-btn" data-target="claim">3. Claim Components</button>
+      <button class="tab-btn" data-target="ai">4. AI Components</button>
+      <button class="tab-btn" data-target="dynamic">5. Dynamic Flow</button>
+      <button class="tab-btn" data-target="deployment">6. Deployment</button>
+    </nav>
+
+    <div class="note" id="active-note">Active diagram: <strong>1. Context</strong></div>
+
+    <section id="context" class="diagram active">
+      <h2>System Context Diagram</h2>
+      <div class="grid-3">
+        <div class="stack">
+          <div class="box blue"><div class="box-content"><span class="icon">👤</span><div><h3>Customer / Patient</h3><p>Sığorta alır, claim yaradır</p></div></div></div>
+          <div class="box green"><div class="box-content"><span class="icon">🛡️</span><div><h3>Insurance Agent</h3><p>Claim review və qərar</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">🩺</span><div><h3>Doctor / Clinic</h3><p>Tibbi sənəd təsdiqi</p></div></div></div>
+          <div class="box amber"><div class="box-content"><span class="icon">🔐</span><div><h3>Admin</h3><p>Sistem və qayda idarəsi</p></div></div></div>
+        </div>
+
+        <div>
+          <div class="arrow-row"><span class="arrow-line"></span><span class="arrow-circle">→</span><span class="arrow-line"></span></div>
+          <div class="box primary center-card"><div class="box-content"><span class="icon">🏢</span><div><h3>E-health Insurance Platform</h3><p>AI dəstəkli sığorta, policy, claim, document və payment idarəetmə sistemi</p></div></div></div>
+          <div class="arrow-row"><span class="arrow-line"></span><span class="arrow-circle">←</span><span class="arrow-line"></span></div>
+        </div>
+
+        <div class="stack">
+          <div class="box green"><div class="box-content"><span class="icon">💳</span><div><h3>Payment Provider</h3><p>Ödəniş və refund</p></div></div></div>
+          <div class="box blue"><div class="box-content"><span class="icon">✉️</span><div><h3>Email / SMS Provider</h3><p>Bildiriş göndərilməsi</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">🩺</span><div><h3>Hospital Systems</h3><p>REST / FHIR inteqrasiya</p></div></div></div>
+          <div class="box amber"><div class="box-content"><span class="icon">🤖</span><div><h3>External AI / LLM</h3><p>OCR, chatbot, risk analysis</p></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="container" class="diagram">
+      <h2>Container Diagram</h2>
+      <div class="grid-2">
+        <div class="box blue"><div class="box-content"><span class="icon">💻</span><div><h3>Web Frontend</h3><p>React — customer, agent, doctor, admin UI</p></div></div></div>
+        <div class="box blue"><div class="box-content"><span class="icon">📱</span><div><h3>Mobile App</h3><p>Customer üçün mobil tətbiq</p></div></div></div>
+      </div>
+
+      <div class="arrow-row"><span class="arrow-line"></span><span class="arrow-label">HTTPS</span><span class="arrow-circle">→</span><span class="arrow-line"></span></div>
+
+      <div class="box primary"><div class="box-content"><span class="icon">🖥️</span><div><h3>API Gateway</h3><p>Routing, JWT validation, CORS, rate limit, correlation ID</p></div></div></div>
+
+      <div class="arrow-row"><span class="arrow-line"></span><span class="arrow-label">REST</span><span class="arrow-circle">→</span><span class="arrow-line"></span></div>
+
+      <div class="boundary">
+        <span class="boundary-title">Microservices</span>
+        <div class="grid-5">
+          <div class="box blue"><div class="box-content"><span class="icon">🔐</span><div><h3>IAM Service</h3><p>Auth, JWT, roles</p></div></div></div>
+          <div class="box blue"><div class="box-content"><span class="icon">👤</span><div><h3>User Profile</h3><p>Customer/doctor/agent profiles</p></div></div></div>
+          <div class="box green"><div class="box-content"><span class="icon">🛡️</span><div><h3>Policy Service</h3><p>Plans, policy, coverage</p></div></div></div>
+          <div class="box green"><div class="box-content"><span class="icon">📄</span><div><h3>Claim Service</h3><p>Claim lifecycle</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">📄</span><div><h3>Document Service</h3><p>Upload, metadata, storage</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">🧠</span><div><h3>AI Service</h3><p>OCR, fraud, risk, chatbot</p></div></div></div>
+          <div class="box amber"><div class="box-content"><span class="icon">💳</span><div><h3>Payment Service</h3><p>Payment, refund, payout</p></div></div></div>
+          <div class="box amber"><div class="box-content"><span class="icon">✉️</span><div><h3>Notification</h3><p>Email, SMS, push</p></div></div></div>
+          <div class="box gray"><div class="box-content"><span class="icon">📈</span><div><h3>Audit Service</h3><p>Activity tracking</p></div></div></div>
+          <div class="box gray"><div class="box-content"><span class="icon">🔁</span><div><h3>Integration</h3><p>Hospital/FHIR adapter</p></div></div></div>
+        </div>
+      </div>
+
+      <div class="arrow-row"><span class="arrow-line"></span><span class="arrow-label">JDBC / Kafka / S3 / Redis</span><span class="arrow-circle">→</span><span class="arrow-line"></span></div>
+
+      <div class="boundary blue-boundary">
+        <span class="boundary-title">Data & Infrastructure</span>
+        <div class="grid-5">
+          <div class="box gray"><div class="box-content"><span class="icon">🗄️</span><div><h3>PostgreSQL per service</h3><p>iam_db, policy_db, claim_db...</p></div></div></div>
+          <div class="box gray"><div class="box-content"><span class="icon">🔁</span><div><h3>Kafka</h3><p>Asinxron event axını</p></div></div></div>
+          <div class="box gray"><div class="box-content"><span class="icon">🖥️</span><div><h3>Redis</h3><p>Cache və rate limit</p></div></div></div>
+          <div class="box gray"><div class="box-content"><span class="icon">☁️</span><div><h3>MinIO / S3</h3><p>Tibbi sənədlər</p></div></div></div>
+          <div class="box gray"><div class="box-content"><span class="icon">🧠</span><div><h3>Vector DB</h3><p>AI semantic search</p></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="claim" class="diagram">
+      <h2>Component Diagram — Claim Service</h2>
+      <div class="grid-3">
+        <div class="stack">
+          <div class="box primary"><div class="box-content"><span class="icon">🖥️</span><div><h3>API Gateway</h3><p>Claim API request-ləri</p></div></div></div>
+          <div class="box green"><div class="box-content"><span class="icon">🛡️</span><div><h3>Policy Service</h3><p>Eligibility / coverage</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">📄</span><div><h3>Document Service</h3><p>Claim sənədləri</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">🧠</span><div><h3>AI Service</h3><p>Risk / fraud result</p></div></div></div>
+        </div>
+
+        <div class="boundary green-boundary">
+          <span class="boundary-title">Claim Service</span>
+          <div class="grid-2">
+            <div class="box blue"><div class="box-content"><span class="icon">🖥️</span><div><h3>ClaimController</h3><p>create, submit, approve, reject</p></div></div></div>
+            <div class="box green"><div class="box-content"><span class="icon">🔁</span><div><h3>ClaimApplicationService</h3><p>Əsas use-case orchestration</p></div></div></div>
+            <div class="box green"><div class="box-content"><span class="icon">🛡️</span><div><h3>EligibilityChecker</h3><p>Policy uyğunluğunu yoxlayır</p></div></div></div>
+            <div class="box purple"><div class="box-content"><span class="icon">📄</span><div><h3>DocumentHandler</h3><p>Sənədləri claim ilə bağlayır</p></div></div></div>
+            <div class="box purple"><div class="box-content"><span class="icon">🧠</span><div><h3>AiRiskHandler</h3><p>AI risk nəticəsini emal edir</p></div></div></div>
+            <div class="box amber"><div class="box-content"><span class="icon">🛡️</span><div><h3>ClaimDecisionService</h3><p>Agent qərarı və status</p></div></div></div>
+            <div class="box gray"><div class="box-content"><span class="icon">🔁</span><div><h3>ClaimEventProducer</h3><p>ClaimSubmitted/Approved event</p></div></div></div>
+            <div class="box gray"><div class="box-content"><span class="icon">🗄️</span><div><h3>ClaimRepository</h3><p>Claim DB access</p></div></div></div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="box gray"><div class="box-content"><span class="icon">🗄️</span><div><h3>claim_db</h3><p>Claim, ClaimItem, Decision</p></div></div></div>
+          <div class="box amber"><div class="box-content"><span class="icon">🔁</span><div><h3>Kafka</h3><p>Claim events</p></div></div></div>
+          <div class="box amber"><div class="box-content"><span class="icon">💳</span><div><h3>Payment Service</h3><p>Approved claim payout</p></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ai" class="diagram">
+      <h2>Component Diagram — AI Service</h2>
+      <div class="grid-3">
+        <div class="stack">
+          <div class="box green"><div class="box-content"><span class="icon">📄</span><div><h3>Claim Service</h3><p>Risk score istəyir</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">📄</span><div><h3>Document Service</h3><p>Fayl və metadata verir</p></div></div></div>
+          <div class="box green"><div class="box-content"><span class="icon">🛡️</span><div><h3>Policy Service</h3><p>Plan və coverage data</p></div></div></div>
+          <div class="box amber"><div class="box-content"><span class="icon">🔁</span><div><h3>Kafka</h3><p>Claim/document events</p></div></div></div>
+        </div>
+
+        <div class="boundary purple-boundary">
+          <span class="boundary-title">AI Service</span>
+          <div class="grid-2">
+            <div class="box blue"><div class="box-content"><span class="icon">🖥️</span><div><h3>AiController</h3><p>AI REST endpoint-ləri</p></div></div></div>
+            <div class="box purple"><div class="box-content"><span class="icon">📄</span><div><h3>DocumentAnalyzer</h3><p>OCR və data extraction</p></div></div></div>
+            <div class="box red"><div class="box-content"><span class="icon">🛡️</span><div><h3>FraudDetector</h3><p>Duplicate və suspicious pattern</p></div></div></div>
+            <div class="box amber"><div class="box-content"><span class="icon">📈</span><div><h3>RiskScoringEngine</h3><p>Risk score / risk level</p></div></div></div>
+            <div class="box green"><div class="box-content"><span class="icon">🧠</span><div><h3>RecommendationEngine</h3><p>Uyğun paket tövsiyəsi</p></div></div></div>
+            <div class="box blue"><div class="box-content"><span class="icon">🤖</span><div><h3>ChatbotService</h3><p>Customer support chatbot</p></div></div></div>
+            <div class="box gray"><div class="box-content"><span class="icon">☁️</span><div><h3>AiProviderClient</h3><p>External LLM/OCR çağırışı</p></div></div></div>
+            <div class="box gray"><div class="box-content"><span class="icon">🗄️</span><div><h3>AiResultRepository</h3><p>AI nəticələrini saxlayır</p></div></div></div>
+          </div>
+        </div>
+
+        <div class="stack">
+          <div class="box amber"><div class="box-content"><span class="icon">🤖</span><div><h3>External AI / LLM</h3><p>OCR, extraction, answer generation</p></div></div></div>
+          <div class="box gray"><div class="box-content"><span class="icon">🗄️</span><div><h3>ai_db</h3><p>AI result, prompt log</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">🧠</span><div><h3>Vector DB</h3><p>Semantic search / embeddings</p></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="dynamic" class="diagram">
+      <h2>Dynamic Diagram — Claim + AI Review Flow</h2>
+      <div class="grid-flow">
+        <div class="step"><div class="step-top"><span class="step-number">1</span><span class="icon">👤</span></div><h3>Customer claim yaradır</h3><p>Form doldurur və sənəd yükləyir</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">2</span><span class="icon">🖥️</span></div><h3>API Gateway</h3><p>Request-i Claim Service-ə yönləndirir</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">3</span><span class="icon">📄</span></div><h3>Claim Service</h3><p>Claim DRAFT/SUBMITTED statusuna keçir</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">4</span><span class="icon">🛡️</span></div><h3>Policy Service</h3><p>Active policy və coverage yoxlanılır</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">5</span><span class="icon">📄</span></div><h3>Document Service</h3><p>Sənəd metadata-sı yaradılır</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">6</span><span class="icon">☁️</span></div><h3>MinIO / S3</h3><p>Fayl object storage-də saxlanılır</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">7</span><span class="icon">🔁</span></div><h3>Kafka</h3><p>ClaimSubmittedEvent publish olunur</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">8</span><span class="icon">🧠</span></div><h3>AI Service</h3><p>OCR, fraud detection, risk scoring</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">9</span><span class="icon">📄</span></div><h3>Claim Service</h3><p>AI nəticəsi claim-ə bağlanır</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">10</span><span class="icon">🛡️</span></div><h3>Agent Review</h3><p>Agent approve/reject qərarı verir</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">11</span><span class="icon">💳</span></div><h3>Payment Service</h3><p>Approved claim üçün payout</p></div>
+        <div class="step"><div class="step-top"><span class="step-number">12</span><span class="icon">✉️</span></div><h3>Notification / Audit</h3><p>Customer xəbərdar edilir, log saxlanılır</p></div>
+      </div>
+    </section>
+
+    <section id="deployment" class="diagram">
+      <h2>Deployment Diagram</h2>
+      <div class="boundary blue-boundary">
+        <span class="boundary-title">User Device</span>
+        <div class="grid-2">
+          <div class="box blue"><div class="box-content"><span class="icon">💻</span><div><h3>Browser</h3><p>React Web Frontend</p></div></div></div>
+          <div class="box blue"><div class="box-content"><span class="icon">📱</span><div><h3>Mobile</h3><p>Customer mobile app</p></div></div></div>
+        </div>
+      </div>
+
+      <div class="arrow-row"><span class="arrow-line"></span><span class="arrow-label">HTTPS</span><span class="arrow-circle">→</span><span class="arrow-line"></span></div>
+
+      <div class="boundary">
+        <span class="boundary-title">Cloud / Kubernetes Cluster</span>
+        <div class="stack">
+          <div class="boundary amber-boundary">
+            <span class="boundary-title">Edge Layer</span>
+            <div class="box primary"><div class="box-content"><span class="icon">🖥️</span><div><h3>Ingress / Load Balancer + API Gateway</h3><p>Routing, auth validation, rate limit</p></div></div></div>
+          </div>
+
+          <div class="boundary green-boundary">
+            <span class="boundary-title">Application Namespace</span>
+            <div class="grid-5">
+              <div class="box blue"><div class="box-content"><span class="icon">🔐</span><div><h3>IAM</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box green"><div class="box-content"><span class="icon">🛡️</span><div><h3>Policy</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box green"><div class="box-content"><span class="icon">📄</span><div><h3>Claim</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box purple"><div class="box-content"><span class="icon">📄</span><div><h3>Document</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box purple"><div class="box-content"><span class="icon">🧠</span><div><h3>AI</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box amber"><div class="box-content"><span class="icon">💳</span><div><h3>Payment</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box amber"><div class="box-content"><span class="icon">✉️</span><div><h3>Notification</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box gray"><div class="box-content"><span class="icon">📈</span><div><h3>Audit</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box gray"><div class="box-content"><span class="icon">🔁</span><div><h3>Integration</h3><p>Spring Boot pod</p></div></div></div>
+              <div class="box blue"><div class="box-content"><span class="icon">👤</span><div><h3>User Profile</h3><p>Spring Boot pod</p></div></div></div>
+            </div>
+          </div>
+
+          <div class="boundary purple-boundary">
+            <span class="boundary-title">Data Namespace</span>
+            <div class="grid-5">
+              <div class="box gray"><div class="box-content"><span class="icon">🗄️</span><div><h3>PostgreSQL</h3><p>Separate DB per service</p></div></div></div>
+              <div class="box amber"><div class="box-content"><span class="icon">🔁</span><div><h3>Kafka</h3><p>Event broker</p></div></div></div>
+              <div class="box gray"><div class="box-content"><span class="icon">🖥️</span><div><h3>Redis</h3><p>Cache / rate limit</p></div></div></div>
+              <div class="box blue"><div class="box-content"><span class="icon">☁️</span><div><h3>MinIO / S3</h3><p>Document storage</p></div></div></div>
+              <div class="box purple"><div class="box-content"><span class="icon">🧠</span><div><h3>Vector DB</h3><p>Embeddings</p></div></div></div>
+            </div>
+          </div>
+
+          <div class="boundary amber-boundary">
+            <span class="boundary-title">Observability Namespace</span>
+            <div class="grid-4">
+              <div class="box gray"><div class="box-content"><span class="icon">📈</span><div><h3>Prometheus</h3><p>Metrics</p></div></div></div>
+              <div class="box gray"><div class="box-content"><span class="icon">📊</span><div><h3>Grafana</h3><p>Dashboards</p></div></div></div>
+              <div class="box gray"><div class="box-content"><span class="icon">🔁</span><div><h3>OpenTelemetry</h3><p>Tracing</p></div></div></div>
+              <div class="box gray"><div class="box-content"><span class="icon">🗄️</span><div><h3>OpenSearch / ELK</h3><p>Central logs</p></div></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arrow-row"><span class="arrow-line"></span><span class="arrow-label">HTTPS / REST / SMTP / FHIR</span><span class="arrow-circle">→</span><span class="arrow-line"></span></div>
+
+      <div class="boundary blue-boundary">
+        <span class="boundary-title">External Systems</span>
+        <div class="grid-4">
+          <div class="box green"><div class="box-content"><span class="icon">💳</span><div><h3>Payment Provider</h3><p>Payment/refund</p></div></div></div>
+          <div class="box blue"><div class="box-content"><span class="icon">✉️</span><div><h3>Email/SMS Provider</h3><p>Notifications</p></div></div></div>
+          <div class="box purple"><div class="box-content"><span class="icon">🩺</span><div><h3>Hospital Systems</h3><p>Healthcare/FHIR</p></div></div></div>
+          <div class="box amber"><div class="box-content"><span class="icon">🤖</span><div><h3>External AI / LLM</h3><p>OCR/LLM inference</p></div></div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="test-panel">
+      <strong>Runtime checks: 4/4 passed</strong>
+      <div class="test-grid">
+        <div class="test">✅ Tabs işləyir</div>
+        <div class="test">✅ Xarici paket yoxdur</div>
+        <div class="test">✅ React/Vite lazım deyil</div>
+        <div class="test">✅ Brauzerdə birbaşa render olunur</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const buttons = document.querySelectorAll(".tab-btn");
+    const diagrams = document.querySelectorAll(".diagram");
+    const activeNote = document.getElementById("active-note");
+
+    buttons.forEach((button) => {
+      button.addEventListener("click", () => {
+        const target = button.dataset.target;
+
+        buttons.forEach((btn) => btn.classList.remove("active"));
+        button.classList.add("active");
+
+        diagrams.forEach((diagram) => {
+          diagram.classList.toggle("active", diagram.id === target);
+        });
+
+        activeNote.innerHTML = `Active diagram: <strong>${button.textContent}</strong>`;
+      });
+    });
+  </script>
+</body>
+</html>

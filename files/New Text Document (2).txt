@@ -1,0 +1,94 @@
+Bu mərhələdə məqsəd sadəcə role-based yoxlama deyil, real ownership authorization qurmaqdır.
+
+Vacib nüanslar:
+- HOSPITAL_ADMIN rolu olan user avtomatik bütün hospital-ları idarə edə bilməz.
+- HOSPITAL_ADMIN yalnız öz bağlı olduğu hospital üzərində write əməliyyat edə bilməlidir.
+- HOSPITAL_STAFF yalnız öz hospital və branch datasını görə bilməlidir.
+- DOCTOR yalnız assignment olduğu hospital/branch datasına access ala bilməlidir.
+- ADMIN global bypass hüququna malik olmalıdır.
+- Ownership yoxlaması üçün X-User-Id -> HospitalStaffProfile və X-User-Id -> DoctorProfile əlaqəsi yoxlanmalıdır.
+- Request path-də gələn hospitalId təkbaşına etibarlı sayılmamalıdır.
+- ProviderAccessService bütün hospital authorization logic-in mərkəzi olmalıdır.
+- Eyni ownership logic controller-lərdə təkrarlanmamalıdır.
+- Mövcud hospital API-ləri işlək qalmalıdır, sadəcə authorization gücləndirilməlidir.
+
+
+İndi User Profile Service-də provider/hospital ownership authorization mərhələsini tamamla.
+
+Hazır vəziyyət:
+- Hospital modeli əlavə olunub:
+  - Hospital
+  - HospitalBranch
+  - HospitalStaffProfile
+  - DoctorHospitalAssignment
+  - HospitalStatus
+- Rollar var:
+  - ADMIN
+  - HOSPITAL_ADMIN
+  - HOSPITAL_STAFF
+  - DOCTOR
+- Hazırda HOSPITAL_ADMIN hospital write edə bilir, amma yalnız öz hospital-ı üzərində əməliyyat etməsi tam yoxlanmır.
+
+Məqsəd:
+Hospital admin/staff yalnız aid olduğu hospital datasını idarə edə bilsin.
+
+Implementasiya et:
+
+1. ProviderAccessService
+Metodlar:
+- canManageHospital(userId, hospitalId)
+- canViewHospital(userId, hospitalId)
+- canManageBranch(userId, branchId)
+- canViewBranch(userId, branchId)
+- canManageHospitalStaff(userId, hospitalId)
+- canAssignDoctor(userId, hospitalId, doctorProfileId)
+- canDoctorAccessHospital(userId, hospitalId)
+
+2. Ownership qaydaları:
+- ADMIN bütün hospital-ları görə və idarə edə bilər.
+- HOSPITAL_ADMIN yalnız öz hospital-ını idarə edə bilər.
+- HOSPITAL_STAFF yalnız öz hospital və branch datasını görə bilər.
+- DOCTOR yalnız assignment olduğu hospital/branch ilə bağlı məlumatları görə bilər.
+- HOSPITAL_ADMIN başqa hospital-a branch, staff və doctor əlavə edə bilməz.
+
+3. Lookup qaydası:
+- HOSPITAL_ADMIN üçün userId -> HospitalStaffProfile -> hospitalId match yoxlanılsın.
+- HOSPITAL_STAFF üçün userId -> HospitalStaffProfile -> hospitalId/branchId match yoxlanılsın.
+- DOCTOR üçün userId -> DoctorProfile -> DoctorHospitalAssignment yoxlanılsın.
+
+4. Mövcud endpoint-lərə ownership əlavə et:
+- POST /api/v1/profiles/hospitals/{hospitalId}/branches
+- GET /api/v1/profiles/hospitals/{hospitalId}/branches
+- POST /api/v1/profiles/hospitals/{hospitalId}/staff
+- GET /api/v1/profiles/hospitals/{hospitalId}/staff
+- POST /api/v1/profiles/hospitals/{hospitalId}/doctors/{doctorProfileId}
+- GET /api/v1/profiles/hospitals/{hospitalId}/doctors
+- GET /api/v1/profiles/hospitals/{hospitalId}
+
+5. Error response:
+- Unauthorized üçün 401
+- Role var, amma access yoxdursa 403
+- Hospital tapılmadıqda 404
+
+6. Liquibase:
+- Əgər HospitalStaffProfile və DoctorHospitalAssignment üçün əlavə index lazımdırsa yeni changeset əlavə et.
+- Məsələn:
+  - hospital_id
+  - user_id
+  - branch_id
+  - doctor_profile_id
+- Flyway istifadə etmə.
+
+7. Testlər:
+- ADMIN can manage all hospitals
+- HOSPITAL_ADMIN can manage own hospital
+- HOSPITAL_ADMIN cannot manage another hospital
+- HOSPITAL_STAFF can view own hospital
+- HOSPITAL_STAFF cannot manage hospital admin operations
+- DOCTOR can view assigned hospital
+- DOCTOR cannot view unassigned hospital
+- missing auth header test
+- forbidden response test
+
+Sonda:
+- Provider ownership modelini README və ya docs içində qısa izah et.

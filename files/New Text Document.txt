@@ -1,0 +1,50 @@
+SaglamOL backend-i Java 21 + Spring Boot microservice monorepo kimi qurulub. Yəni bütün servislər bir Gradle layihəsindədir, amma runtime-da ayrı-ayrı Docker container kimi işləyirlər. Məqsəd sağlamlıq sığortası üçün istifadəçi, polis, claim, tibbi sənəd, risk/fraud, notification və payment proseslərini ayrı servislərlə idarə etməkdir.
+Əsas Servislər
+•
+api-gateway: bütün xarici request-lərin giriş nöqtəsidir. JWT yoxlayır, request-lərə X-User-Id, X-User-Roles, X-Correlation-Id header-ləri əlavə edir.
+•
+iam-service: register, login, refresh token, email və telefon nömrəsi ilə authentication işlərini görür.
+•
+user-profile-service: istifadəçi profil məlumatları üçün nəzərdə tutulub.
+•
+policy-service: sığorta paketləri və istifadəçi polisləri üçün əsas servisdir.
+•
+claim-service: sığorta claim-lərinin yaradılması və idarəsi üçün nəzərdə tutulub.
+•
+health-record-service: tibbi qeydlər, sənədlər, fayl metadata və MinIO ilə sənəd saxlama hissəsini idarə edir.
+•
+ai-risk-service: sadə API key əsaslı AI inteqrasiyası ilə risk analizi üçün nəzərdə tutulub.
+•
+fraud-detection-service: saxta claim, təkrar sənəd, fraud siqnalları kimi yoxlamalar üçün servisdir.
+•
+notification-service: email, SMS və sistem bildirişləri üçün nəzərdə tutulub.
+•
+payment-service: ödəniş, invoice və sığorta ödəniş axınları üçün ayrılıb.
+•
+discovery-server: servislərin bir-birini tapması üçün Eureka serverdir.
+•
+config-server: gələcəkdə mərkəzi konfiqurasiya idarəsi üçün istifadə olunur.
+Tech Stack
+•
+Java 21: əsas proqramlaşdırma dili.
+•
+Spring Boot 3.3.6: hər microservice-in əsas framework-üdür.
+•
+Spring Cloud 2023.0.4: gateway, discovery və microservice inteqrasiyası üçün istifadə olunur.
+•
+Gradle multi-module: bütün servisləri bir monorepo içində build və idarə edir.
+•
+PostgreSQL: hər servisin öz database-i var, məsələn iam_db, policy_db, claim_db.
+•
+Liquibase: database cədvəllərini migration ilə idarə edir.
+•
+Redis: cache və sürətli runtime data üçün istifadə olunacaq.
+•
+Kafka + Zookeeper: servislərarası event/message axını üçün nəzərdə tutulub.
+•
+MinIO: tibbi sənədlər və fayllar üçün local S3-compatible storage rolunu oynayır.
+•
+Docker Compose: bütün infra və app servisləri bir command ilə qaldırır.
+•
+Actuator: servislərin /actuator/health endpoint-ləri ilə healthcheck olunmasını təmin edir.
+Qısa desək, hazır struktur sağlamlıq sığortası platformasının backend əsasını qurur: giriş nöqtəsi api-gateway, identity hissəsi iam-service, biznes domain-lər ayrı servislər, data PostgreSQL-də, fayllar MinIO-da, event-lər Kafka-da, bütün runtime isə Docker Compose ilə idarə olunur.
